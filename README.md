@@ -65,3 +65,5 @@ PDF-Import: bis 250 MB pro Werk, ohne feste Seitenzahlgrenze. Die Browserfassung
 Automatische Textauswahl: Kapitelverzeichnisse, kurze Titel- und Verlagsseiten werden anhand transparenter Textmerkmale ausgeschlossen. Die erste Stichprobe verteilt sich gleichmässig über verbleibende Passagen pro Quelldatei und wird vor der Prompt-Erstellung angezeigt. Diese Vorauswahl ersetzt keine literarische Analyse; auch kurze literarische Texte können dabei ausgelassen werden und sind weiterhin manuell auswählbar.
 
 Prompt-Ausschnitte werden über PDF-Seitengrenzen hinweg bis zu Satzgrenzen erweitert. Auch die Zeichenbegrenzung kürzt nur an erkannten Satzenden. Alle beteiligten Seiten und ihre Zeichenbereiche werden ausgewiesen. Originalpassagen und gespeicherte Beleg-IDs bleiben erhalten.
+
+Bei der Überarbeitung stehen Rückmeldung und derselbe Geschichteneditor nebeneinander (auf schmalen Bildschirmen untereinander). «Überarbeitete Fassung sichern» speichert eine Version und bleibt bei der Überarbeitung. Die bisherigen Fassungen bleiben erhalten.
