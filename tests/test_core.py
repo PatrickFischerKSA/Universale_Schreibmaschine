@@ -16,6 +16,13 @@ class CorpusTests(unittest.TestCase):
   from reportlab.pdfgen.canvas import Canvas
   b=io.BytesIO();c=Canvas(b);c.drawString(40,700,'The first page has enough words to test this extraction safely.');c.showPage();c.drawString(40,700,'The second page has enough words to preserve the page reference.');c.save()
   units,w=extract('x.pdf',b.getvalue());self.assertEqual(units[1]['location'],'PDF-Seite 2');self.assertIn('second',units[1]['text'])
+ def test_complete_work_over_3000_pages(self):
+  from reportlab.pdfgen.canvas import Canvas
+  b=io.BytesIO();c=Canvas(b)
+  for i in range(3001):
+   c.drawString(40,700,f'Page {i+1}: A figure finds a letter and decides to open it.');c.showPage()
+  c.save();units,_=extract('complete.pdf',b.getvalue())
+  self.assertEqual(len(units),3001);self.assertIn('3001',units[-1]['text'])
  def test_epub_spine(self):
   b=io.BytesIO()
   with zipfile.ZipFile(b,'w') as z:

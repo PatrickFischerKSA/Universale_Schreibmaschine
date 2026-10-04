@@ -33,11 +33,10 @@ def extract(name,raw):
         from pypdf import PdfReader
         reader=PdfReader(io.BytesIO(raw))
         if reader.is_encrypted and not reader.decrypt(''):raise ValueError('Das PDF ist passwortgeschützt.')
-        if len(reader.pages)>3000:raise ValueError('Bitte PDFs mit höchstens 3000 Seiten verwenden.')
         for i,page in enumerate(reader.pages):
             text=clean(page.extract_text() or '')
             units.append({'location':f'PDF-Seite {i+1}','text':text})
-            if len(tokens(text))<10:warnings.append(f'PDF-Seite {i+1}: wenig oder kein Text erkannt; Scan oder Leerseite prüfen.')
+            if len(tokens(text))<10 and len(warnings)<20:warnings.append(f'PDF-Seite {i+1}: wenig oder kein Text erkannt; Scan oder Leerseite prüfen.')
         warnings.append('PDF-Seiten sind Dateiseiten, nicht zwingend die gedruckte Paginierung. Keine OCR; Lesereihenfolge und Trennstriche prüfen.')
     elif ext=='epub':
         with zipfile.ZipFile(io.BytesIO(raw)) as z:

@@ -45,7 +45,7 @@ Feedback verbessert die gespeicherten Regeln und Beispiele. Es findet **kein Mod
 
 ## Prüfstand
 
-- Acht automatische Tests für TXT, PDF und EPUB, lückenlose Segmentierung mit Positionen, Quellenbezug, aktive Regeln, API-Anfrageformat und atomare Speicherung.
+- Neun automatische Tests für TXT, PDF und EPUB, lückenlose Segmentierung mit Positionen, Quellenbezug, aktive Regeln, API-Anfrageformat und atomare Speicherung.
 - Lokaler HTTP-Test: Export/Import, Trennung der Autorenprofile, Duplikaterkennung und Zugriffsschutz.
 - Browserprüfung: Autorenprofil anlegen, TXT importieren, Suche, Analyseprompt, Profilversion, Feedbackregel im Schreibprompt, Entwurf sichern, Rückmeldung und Wiederladen.
 - Die echte OpenAI-Anfrage ist mangels API-Schlüssel noch nicht live geprüft. Das Anfrage-/Antwortformat ist mit einer kontrollierten Testantwort geprüft.
@@ -57,3 +57,5 @@ Tests: `python3 -m unittest discover -s tests -v` (PDF-Test benötigt zusätzlic
 GitHub Pages veröffentlicht `docs/` aus `main`. `python3 build_pages.py` synchronisiert Oberfläche und Gestaltung aus `static/`; `docs/browser-api.js` stellt die lokalen Browserfunktionen bereit. Die Python-Fassung bleibt in `server.py` und `corpus.py`. Benutzerdateien, Korpora und API-Schlüssel werden nicht ins Repository übernommen.
 
 Mitgelieferte Browserbibliotheken: PDF.js (`pdfjs-dist` 5.6.205, Apache-2.0) und JSZip (3.10.1, wahlweise MIT). Lizenztexte liegen in `docs/vendor/`. Es werden keine CDN-Skripte zur Laufzeit geladen.
+
+PDF-Import: bis 250 MB pro Werk, ohne feste Seitenzahlgrenze. Die Browserfassung verarbeitet die Datei direkt ohne Base64-Zwischenkopie und zeigt den Seitenfortschritt. PDF.js mit Kompatibilitätserweiterungen und Schriftressourcen ist mitgeliefert. Scans benötigen weiterhin eine Textebene.

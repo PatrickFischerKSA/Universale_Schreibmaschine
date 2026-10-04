@@ -93,9 +93,17 @@ class Handler(BaseHTTPRequestHandler):
         origin=self.headers.get('Origin')
         if origin and origin not in (f'http://127.0.0.1:{self.server.server_port}',f'http://localhost:{self.server.server_port}'):return self.send(403,{'error':'Unzulässiger Ursprung.'})
         try:
+            path=urlparse(self.path).path
             size=int(self.headers.get('Content-Length',0))
-            if size>75_000_000:raise ValueError('Datei zu gross (maximal 50 MB pro Werk).')
-            data=json.loads(self.rfile.read(size));path=urlparse(self.path).path
+            limit=250_000_000 if path=='/api/import-file' else 350_000_000
+            if size>limit:raise ValueError('Datei zu gross (maximal 250 MB pro Werk). Bitte in Bände aufteilen.')
+            if path=='/api/import-file':
+                from urllib.parse import parse_qs
+                query=parse_qs(urlparse(self.path).query)
+                data={'author_id':query.get('author_id',[''])[0],'filename':query.get('filename',[''])[0]}
+                raw_upload=self.rfile.read(size)
+                path='/api/import'
+            else:data=json.loads(self.rfile.read(size))
             if path=='/api/generate':
                 prompt=str(data.get('prompt',''))
                 if not prompt or len(prompt)>100000:raise ValueError('Prompt fehlt oder ist zu lang.')
@@ -127,8 +135,8 @@ class Handler(BaseHTTPRequestHandler):
                     save(db);return self.send(200,{'count':len(incoming['authors'])})
                 a=author(db,data.get('author_id'))
                 if path=='/api/import':
-                    raw=base64.b64decode(data.get('content',''),validate=True)
-                    if len(raw)>50_000_000:raise ValueError('Maximal 50 MB pro Werk.')
+                    raw=raw_upload if 'raw_upload' in locals() else base64.b64decode(data.get('content',''),validate=True)
+                    if len(raw)>250_000_000:raise ValueError('Maximal 250 MB pro Werk. Bitte in Bände aufteilen.')
                     digest=hashlib.sha256(raw).hexdigest()
                     if any(w['sha256']==digest for w in a['works']):raise ValueError('Diese Datei ist bereits in diesem Korpus.')
                     units,warnings=extract(str(data['filename']),raw);ident=uid()
