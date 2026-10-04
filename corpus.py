@@ -94,13 +94,25 @@ def retrieve(passages,query,limit=6):
         if not terms or score>0:scored.append({**p,'score':round(score,4)})
     return sorted(scored,key=lambda p:p['score'],reverse=True)[:limit]
 
+def exclusion_reason(p):
+    text=p['text'];lines=[x.strip() for x in text.splitlines() if x.strip()]
+    headings=sum(bool(re.search(r'\b(kapitel|chapter|inhaltsverzeichnis|contents)\b',x,re.I)) and len(tokens(x))<=8 for x in lines)
+    if re.search(r'\b(inhaltsverzeichnis|table of contents)\b',text,re.I) or (headings>=4 and headings/max(1,len(lines))>=.35):
+        return 'Inhaltsverzeichnis oder Kapitelübersicht'
+    if len(tokens(text))<45:return 'Sehr kurzer Text oder Titelblatt'
+    if re.search(r'\b(isbn|impressum|copyright|alle rechte vorbehalten)\b',text,re.I) and len(tokens(text))<180:
+        return 'Verlagsangaben'
+    return ''
+
 def representative(passages,limit=6):
-    # Round-robin over works, evenly spread within each work.
+    # Transparent stratified sample; never claim semantic representativeness.
     groups={}
-    for p in passages:groups.setdefault(p['work_id'],[]).append(p)
+    for p in passages:
+        if not exclusion_reason(p):groups.setdefault(p['work_id'],[]).append(p)
     queues=[]
     for group in groups.values():
-        indices=list(dict.fromkeys([0,len(group)//2,len(group)-1]+list(range(len(group)))))
+        count=min(limit,len(group))
+        indices=[min(len(group)-1,int((i+.5)*len(group)/count)) for i in range(count)]
         queues.append([group[i] for i in indices])
     out=[]
     while len(out)<limit and any(queues):

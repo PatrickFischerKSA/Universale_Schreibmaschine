@@ -12,3 +12,9 @@ const prompt=makePrompt(a,'write',{task:'Eine Szene im Regen',length:800});
 assert(prompt.text.includes('Aktive Regel'));assert(!prompt.text.includes('INAKTIV'));assert(prompt.text.includes('Belegtes Profil'));assert(prompt.passage_ids.length>0);
 assert.throws(()=>makePrompt(a,'write',{}));assert.throws(()=>makePrompt(a,'review',{}));
 console.log('PASS: browser segmentation, provenance, retrieval, profile/rules, required input');
+
+const toc={id:'toc',work_id:'w',text:Array.from({length:40},(_,i)=>`${i}. Kapitel`).join('\n')};
+const prose=Array.from({length:60},(_,i)=>({id:String(i),work_id:'w',text:'Eine Figur öffnete den Brief und sah lange aus dem Fenster. '.repeat(12)}));
+assert.deepEqual(representative([toc,...prose]).map(p=>p.id),['5','15','25','35','45','55']);
+assert.deepEqual(representative([toc]),[]);
+console.log('PASS: contents excluded, evenly distributed sample, no unsuitable fallback');

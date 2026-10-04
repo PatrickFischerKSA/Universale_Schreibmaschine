@@ -2,7 +2,7 @@ import unittest,sys,io,zipfile,json,tempfile,os
 from pathlib import Path
 from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from corpus import extract,segment,retrieve,representative,tokens
+from corpus import extract,segment,retrieve,representative,tokens,exclusion_reason
 import server
 
 class CorpusTests(unittest.TestCase):
@@ -34,10 +34,17 @@ class CorpusTests(unittest.TestCase):
   a=segment([{'location':'test','text':'Regen Regen Regen Fenster'}],'a');b=segment([{'location':'test','text':'Sonne Blumen Sommer'}],'b')
   self.assertEqual(retrieve(a+b,'Regen')[0]['work_id'],'a');self.assertEqual(retrieve(b,'Regen'),[])
  def test_prompts_feedback_and_provenance(self):
-  ps=segment([{'location':'Textdatei','text':'Der Regen strich gegen das Fenster. Das Kind sah hinaus und schwieg.'}],'w')
+  ps=segment([{'location':'Textdatei','text':('Der Regen strich gegen das Fenster. Das Kind sah hinaus und schwieg. '*5)}],'w')
   a={'id':'a','name':'Testautor','works':[{'title':'Werk','passages':ps}],'profiles':[{'text':'Profil mit Belegen'}],'feedback':[{'active':True,'rule':'Dialog konkret halten'},{'active':False,'rule':'IGNORIEREN'}]}
   p=server.make_prompt(a,'write',{'task':'Ein Kind im Regen','length':800})
   self.assertIn('Dialog konkret halten',p['text']);self.assertNotIn('IGNORIEREN',p['text']);self.assertIn(ps[0]['id'],p['text']);self.assertEqual(p['profile_version'],1)
+ def test_automatic_sample_excludes_contents_and_spreads_selection(self):
+  toc={'id':'toc','work_id':'w','text':'\n'.join(f'{i}. Kapitel' for i in range(40))}
+  prose=[{'id':str(i),'work_id':'w','text':'Eine Figur öffnete den Brief und sah lange aus dem Fenster. '*12} for i in range(60)]
+  self.assertTrue(exclusion_reason(toc))
+  chosen=representative([toc]+prose)
+  self.assertEqual([p['id'] for p in chosen],['5','15','25','35','45','55'])
+  self.assertEqual(representative([toc]),[])
  def test_api_key_missing(self):
   with self.assertRaisesRegex(ValueError,'API-Schlüssel'):server.generate('text','model','')
  def test_api_output_and_request(self):

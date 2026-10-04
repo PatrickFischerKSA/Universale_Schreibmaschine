@@ -4,7 +4,7 @@ from http.server import ThreadingHTTPServer,BaseHTTPRequestHandler
 from urllib.parse import urlparse
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError,URLError
-from corpus import extract,segment,metrics,retrieve,representative,tokens
+from corpus import extract,segment,metrics,retrieve,representative,tokens,exclusion_reason
 ROOT=Path(__file__).resolve().parent
 DATA=Path(os.environ.get('SCHREIBMASCHINE_DATA',ROOT/'data'))
 LOCK=threading.RLock();TOKEN=secrets.token_urlsafe(32)
@@ -30,8 +30,8 @@ def make_prompt(a,kind,data):
     query=str(data.get('task','')).strip();selected=data.get('selected',[])
     if selected:chosen=[p for p in ps if p['id'] in selected][:8]
     elif kind=='analyse':chosen=representative(ps,6)
-    else:chosen=retrieve(ps,query,6) or representative(ps,4)
-    if not chosen:raise ValueError('Keine passenden Passagen ausgewählt.')
+    else:chosen=retrieve([p for p in ps if not exclusion_reason(p)],query,6) or representative(ps,4)
+    if not chosen:raise ValueError('Keine geeigneten Fliesstextpassagen automatisch gefunden. Bitte unter «Quellen gezielt auswählen» Textstellen prüfen und auswählen.')
     excerpts=[];budget=18000;included=[]
     for p in chosen:
         if budget<400:break
@@ -142,6 +142,8 @@ class Handler(BaseHTTPRequestHandler):
                     units,warnings=extract(str(data['filename']),raw);ident=uid()
                     w={'id':ident,'title':str(data.get('title') or data['filename']),'filename':str(data['filename']),'sha256':digest,'imported':now(),'units':units,'warnings':warnings,'passages':segment(units,ident)}
                     a['works'].append(w);save(db);return self.send(200,public(a))
+                if path=='/api/sample':
+                    ps=passages(a);return self.send(200,{'passages':representative(ps),'excluded':sum(bool(exclusion_reason(p)) for p in ps),'total':len(ps)})
                 if path=='/api/search':return self.send(200,{'passages':retrieve(passages(a),str(data.get('query','')),30)})
                 if path=='/api/prompt':return self.send(200,make_prompt(a,data.get('kind','write'),data))
                 if path=='/api/profile':
