@@ -108,7 +108,7 @@ showStage('corpus',false);
 let generationBusy=false,returnFromSettings='profileSection';
 const directMode=()=>!window.browserAPI&&$('mode').value==='api';
 const copyJourney=document.querySelector('#journey p').textContent;
-const profileHelp=$('profile').previousElementSibling,copyProfileHelp=profileHelp.textContent;
+const profileHelp=$('profileSection').querySelector('p.small'),copyProfileHelp=profileHelp.textContent;
 const draftHelp=$('draft').previousElementSibling,copyDraftHelp=draftHelp.textContent;const reviewHelp=$('learning').querySelector('h2+p'),copyReviewHelp=reviewHelp.textContent;
 const apiJourney=updateJourney;updateJourney=function(){apiJourney();if(directMode()&&current?.works.length&&!current.profiles.length)$('nextHint').textContent=$('profile').value.trim()?'Autorenprofil prüfen und speichern.':'In Schritt 2 «Autorenprofil erstellen» anklicken.';};
 function syncApiUI(){
