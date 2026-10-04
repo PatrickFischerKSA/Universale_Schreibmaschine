@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {webcrypto} from 'node:crypto';
 globalThis.window={};
-const {segment,words,retrieve,representative,makePrompt}=await import('../docs/browser-api.js');
+const {segment,words,retrieve,representative,makePrompt,completeExcerpt}=await import('../docs/browser-api.js');
 const text=('Eine Figur wartet im Regen. Dann entscheidet sie sich zu gehen.\n\n').repeat(130);
 const ps=segment([{location:'Test','text':text}],'werk');
 assert.deepEqual(words(ps.map(p=>p.text).join(' ')),words(text));
@@ -23,3 +23,10 @@ const mixed={...a,works:[{title:'Werk',passages:[toc,...ps]}]};
 const corrected=makePrompt(mixed,'analyse',{selected:['toc']});
 assert(!corrected.passage_ids.includes('toc'));assert(corrected.passage_ids.length>0);
 console.log('PASS: explicit stale contents selection cannot enter analysis prompt');
+
+const units=[{location:'PDF-Seite 1',text:'Ein vollständiger Satz. Im Tanz brach eine heimliche'},{location:'PDF-Seite 2',text:'Leidenschaft aus ihr hervor. Danach schwieg sie. Ein langer Folgesatz ohne Ende'}];
+const passage={id:'p',location:units[0].location,start:23,end:units[0].text.length,text:units[0].text.slice(23)};
+const full=completeExcerpt({units},passage);assert(full.text.endsWith('hervor.'));assert.equal(full.sources.length,2);
+for(const source of full.sources)assert(full.text.includes(units.find(u=>u.location===source.location).text.slice(source.start,source.end)));
+assert.equal(completeExcerpt({units},{...passage,start:0,end:70},30).text,'Ein vollständiger Satz.');
+console.log('PASS: cross-page sentences, exact source spans, sentence-safe length cap');

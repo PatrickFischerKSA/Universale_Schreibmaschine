@@ -2,7 +2,7 @@ import unittest,sys,io,zipfile,json,tempfile,os
 from pathlib import Path
 from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from corpus import extract,segment,retrieve,representative,tokens,exclusion_reason
+from corpus import extract,segment,retrieve,representative,tokens,exclusion_reason,complete_excerpt
 import server
 
 class CorpusTests(unittest.TestCase):
@@ -48,6 +48,15 @@ class CorpusTests(unittest.TestCase):
   for p in prose:p.update(location='Test',start=0)
   a={'id':'test','name':'Test','works':[{'title':'Werk','passages':[toc]+prose}],'profiles':[],'feedback':[]}
   self.assertNotIn('toc',server.make_prompt(a,'analyse',{'selected':['toc']})['passage_ids'])
+ def test_sentence_boundaries_across_pdf_pages(self):
+  units=[{'location':'PDF-Seite 1','text':'Ein vollständiger Satz. Im Tanz brach eine heimliche'}, {'location':'PDF-Seite 2','text':'Leidenschaft aus ihr hervor. Danach schwieg sie. Ein langer Folgesatz ohne Ende'}]
+  work={'units':units};p={'id':'p','location':'PDF-Seite 1','start':23,'end':len(units[0]['text']),'text':units[0]['text'][23:]}
+  e=complete_excerpt(work,p);self.assertTrue(e['text'].endswith('hervor.'));self.assertEqual(len(e['sources']),2)
+  for source in e['sources']:
+   u=next(u for u in units if u['location']==source['location'])
+   self.assertIn(u['text'][source['start']:source['end']],e['text'])
+  p.update(start=0,end=70,text=units[0]['text']);e=complete_excerpt(work,p,limit=30)
+  self.assertEqual(e['text'],'Ein vollständiger Satz.')
  def test_api_key_missing(self):
   with self.assertRaisesRegex(ValueError,'API-Schlüssel'):server.generate('text','model','')
  def test_api_output_and_request(self):

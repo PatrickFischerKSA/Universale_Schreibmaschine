@@ -119,3 +119,32 @@ def representative(passages,limit=6):
         for q in queues:
             if q and len(out)<limit:out.append(q.pop(0))
     return out
+
+
+def complete_excerpt(work, passage, limit=4000):
+    """Build a sentence-bounded excerpt across source units; retain exact spans."""
+    units=work.get('units') or [{'location':passage['location'],'text':passage['text']}]
+    index=next((i for i,u in enumerate(units) if u['location']==passage['location']),None)
+    if index is None:raise ValueError('Fundstelle des Ausschnitts nicht gefunden.')
+    # At most three neighbouring pages on each side; no fabricated continuation.
+    lo=max(0,index-3);hi=min(len(units),index+4);parts=[];spans=[];offset=0
+    for i in range(lo,hi):
+        text=units[i]['text'];spans.append((i,offset,offset+len(text)));parts.append(text);offset+=len(text)+2
+    text='\n\n'.join(parts);base=next(a for i,a,b in spans if i==index)
+    start0=base+(passage.get('start',0) if work.get('units') else 0)
+    end0=base+(passage.get('end',len(passage['text'])) if work.get('units') else len(passage['text']))
+    boundaries=[]
+    abbreviations={'dr','prof','bzw','usw','z','b','u','a','d','h','mr','mrs','st','nr','abb','vgl'}
+    for m in re.finditer(r'[.!?…]+[»”"’\')\]]*(?=\s|$)',text):
+        prefix=text[:m.start()];word=re.search(r'([\w]+)$',prefix)
+        if m.group()=='.' and word and (word[1].lower() in abbreviations or word[1].isdigit()):continue
+        boundaries.append(m.end())
+    before=[b for b in boundaries if b<=start0]
+    start=before[-1] if before else (0 if lo==0 else next((b for b in boundaries if b>=start0),len(text)))
+    while start<len(text) and text[start].isspace():start+=1
+    ends=[b for b in boundaries if start<b<=start+limit]
+    end=next((b for b in ends if b>=end0),ends[-1] if ends else None)
+    if end is None:raise ValueError('Kein vollständiger Satz innerhalb des Ausschnittlimits gefunden. Eine andere Passage wählen.')
+    sources=[{'location':units[i]['location'],'start':max(start,a)-a,'end':min(end,b)-a} for i,a,b in spans if max(start,a)<min(end,b)]
+    label='; '.join(f"{v['location']} · Zeichen {v['start']}–{v['end']}" for v in sources)
+    return {**passage,'text':text[start:end],'sources':sources,'location':' / '.join(v['location'] for v in sources),'source_label':label}

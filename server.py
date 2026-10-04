@@ -4,7 +4,7 @@ from http.server import ThreadingHTTPServer,BaseHTTPRequestHandler
 from urllib.parse import urlparse
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError,URLError
-from corpus import extract,segment,metrics,retrieve,representative,tokens,exclusion_reason
+from corpus import extract,segment,metrics,retrieve,representative,tokens,exclusion_reason,complete_excerpt
 ROOT=Path(__file__).resolve().parent
 DATA=Path(os.environ.get('SCHREIBMASCHINE_DATA',ROOT/'data'))
 LOCK=threading.RLock();TOKEN=secrets.token_urlsafe(32)
@@ -36,8 +36,9 @@ def make_prompt(a,kind,data):
     excerpts=[];budget=18000;included=[]
     for p in chosen:
         if budget<400:break
-        text=p['text'][:min(4000,budget)];budget-=len(text);included.append(p['id'])
-        excerpts.append(f"[{p['id']}] {p['title']} · {p['location']} · Zeichen {p['start']}–{p['start']+len(text)}\n{text}")
+        work=next((w for w in a['works'] if w.get('id')==p['work_id']),None) or next(w for w in a['works'] if any(x['id']==p['id'] for x in w['passages']))
+        excerpt=complete_excerpt(work,p,min(4000,budget));text=excerpt['text'];budget-=len(text);included.append(p['id'])
+        excerpts.append(f"[{p['id']}] {p['title']} · {excerpt['source_label']}\n{text}")
     profile=a['profiles'][-1]['text'] if a['profiles'] else ''
     rules='\n'.join('- '+f['rule'] for f in a['feedback'] if f.get('active') and f.get('rule'))
     header=f"Autorenbibliothek: {a['name']}\nMaterialbasis: {len(included)} ausgewählte Ausschnitte aus {len(ps)} Passagen / {len(a['works'])} Quelldateien. Aussagen gelten zunächst nur für diese Auswahl.\n"
@@ -144,7 +145,7 @@ class Handler(BaseHTTPRequestHandler):
                     w={'id':ident,'title':str(data.get('title') or data['filename']),'filename':str(data['filename']),'sha256':digest,'imported':now(),'units':units,'warnings':warnings,'passages':segment(units,ident)}
                     a['works'].append(w);save(db);return self.send(200,public(a))
                 if path=='/api/sample':
-                    ps=passages(a);return self.send(200,{'passages':representative(ps),'excluded':sum(bool(exclusion_reason(p)) for p in ps),'total':len(ps)})
+                    ps=passages(a);return self.send(200,{'passages':[complete_excerpt(next(w for w in a['works'] if w['id']==p['work_id']),p) for p in representative(ps)],'excluded':sum(bool(exclusion_reason(p)) for p in ps),'total':len(ps)})
                 if path=='/api/search':return self.send(200,{'passages':retrieve(passages(a),str(data.get('query','')),30)})
                 if path=='/api/prompt':return self.send(200,make_prompt(a,data.get('kind','write'),data))
                 if path=='/api/profile':
