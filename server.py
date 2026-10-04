@@ -31,6 +31,7 @@ def make_prompt(a,kind,data):
     if selected:chosen=[p for p in ps if p['id'] in selected][:8]
     elif kind=='analyse':chosen=representative(ps,6)
     else:chosen=retrieve([p for p in ps if not exclusion_reason(p)],query,6) or representative(ps,4)
+    if kind=='analyse':chosen=[p for p in chosen if not exclusion_reason(p)] or representative(ps,6)
     if not chosen:raise ValueError('Keine geeigneten Fliesstextpassagen automatisch gefunden. Bitte unter «Quellen gezielt auswählen» Textstellen prüfen und auswählen.')
     excerpts=[];budget=18000;included=[]
     for p in chosen:
@@ -39,7 +40,7 @@ def make_prompt(a,kind,data):
         excerpts.append(f"[{p['id']}] {p['title']} · {p['location']} · Zeichen {p['start']}–{p['start']+len(text)}\n{text}")
     profile=a['profiles'][-1]['text'] if a['profiles'] else ''
     rules='\n'.join('- '+f['rule'] for f in a['feedback'] if f.get('active') and f.get('rule'))
-    header=f"Autorenbibliothek: {a['name']}\nMaterialbasis: {len(included)} ausgewählte Ausschnitte aus {len(ps)} Passagen / {len(a['works'])} Werken. Aussagen gelten zunächst nur für diese Auswahl.\n"
+    header=f"Autorenbibliothek: {a['name']}\nMaterialbasis: {len(included)} ausgewählte Ausschnitte aus {len(ps)} Passagen / {len(a['works'])} Quelldateien. Aussagen gelten zunächst nur für diese Auswahl.\n"
     if kind=='analyse':
         task='''Analysiere die ausgewählten Passagen vergleichend: Syntax und Rhythmus, Perspektive und Erzähldistanz, Wahrnehmung und innere Bewegung, Wortfelder und Bildlichkeit, Dialog und Handlungsführung. Trenne Beobachtung, Deutung und mögliche Schreibregel. Belege jede wesentliche Beobachtung mit einer vorhandenen Passage-ID und einem kurzen wörtlichen Textbeleg. Markiere Unterschiede zwischen Werken und Unsicherheiten. Gib keine Behauptung als Merkmal des gesamten Autors aus, die nur an einem Ausschnitt erkennbar ist. Schlage überprüfbare positive und negative Gestaltungsregeln vor. Keine erfundenen Belege.'''
     elif kind=='review':

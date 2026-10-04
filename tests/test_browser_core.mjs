@@ -18,3 +18,8 @@ const prose=Array.from({length:60},(_,i)=>({id:String(i),work_id:'w',text:'Eine 
 assert.deepEqual(representative([toc,...prose]).map(p=>p.id),['5','15','25','35','45','55']);
 assert.deepEqual(representative([toc]),[]);
 console.log('PASS: contents excluded, evenly distributed sample, no unsuitable fallback');
+
+const mixed={...a,works:[{title:'Werk',passages:[toc,...ps]}]};
+const corrected=makePrompt(mixed,'analyse',{selected:['toc']});
+assert(!corrected.passage_ids.includes('toc'));assert(corrected.passage_ids.length>0);
+console.log('PASS: explicit stale contents selection cannot enter analysis prompt');

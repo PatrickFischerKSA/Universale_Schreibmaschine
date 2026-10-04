@@ -45,6 +45,9 @@ class CorpusTests(unittest.TestCase):
   chosen=representative([toc]+prose)
   self.assertEqual([p['id'] for p in chosen],['5','15','25','35','45','55'])
   self.assertEqual(representative([toc]),[])
+  for p in prose:p.update(location='Test',start=0)
+  a={'id':'test','name':'Test','works':[{'title':'Werk','passages':[toc]+prose}],'profiles':[],'feedback':[]}
+  self.assertNotIn('toc',server.make_prompt(a,'analyse',{'selected':['toc']})['passage_ids'])
  def test_api_key_missing(self):
   with self.assertRaisesRegex(ValueError,'API-Schlüssel'):server.generate('text','model','')
  def test_api_output_and_request(self):
