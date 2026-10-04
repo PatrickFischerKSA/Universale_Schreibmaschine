@@ -15,5 +15,5 @@ html=(root/'docs/index.html').read_text()
 for asset in ('app.js','browser-api.js','style.css'):
     digest=hashlib.sha256((root/'docs'/asset).read_bytes()).hexdigest()[:12]
     html=html.replace('./'+asset,'./'+asset+'?v='+digest)
-html=html.replace('Schreibmaschine · Belegte Merkmale', 'Schreibmaschine · Textauswahl 3 · Belegte Merkmale')
+html=html.replace('Schreibmaschine · Belegte Merkmale', 'Schreibmaschine · Geführte Werkstatt · Belegte Merkmale')
 (root/'docs/index.html').write_text(html)

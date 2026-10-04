@@ -14,14 +14,16 @@ Repository herunterladen und entpacken. Auf dem Mac `Starten.command` doppelklic
 
 ## Arbeitsablauf
 
-1. Autorenprofil anlegen. Werke als TXT, Markdown, EPUB oder PDF mit Textebene importieren. Mehrfachauswahl ist möglich.
-2. Die Anwendung extrahiert Volltexte, gliedert sie in Passagen und berechnet grundlegende Kennzahlen. Dateiprüfsummen verhindern doppelte Importe innerhalb eines Autorenprofils.
-3. Auszüge prüfen, Stichwörter suchen und bei Bedarf bis zu acht Passagen auswählen. Jeder Auszug hat eine ID, Herkunft und Zeichenpositionen im extrahierten Text. PDF-Seiten bezeichnen Dateiseiten; EPUB-Abschnitte folgen der Lesereihenfolge.
-4. Analyseauftrag vorbereiten. Im Kopiermodus in ChatGPT bearbeiten und die Antwort zurückkopieren; alternativ den sichtbaren Auftrag per API senden. Die literarische Analyse ist ein Vorschlag, den du prüfst und als Profilversion speicherst.
-5. Schreibauftrag eingeben. Das gespeicherte Profil, aktive Feedbackregeln und ausgewählte Quellen werden zum Prompt zusammengestellt. Ohne manuelle Auswahl arbeitet die Suche mit Stichwörtern aus dem Auftrag; ohne Treffer wird eine über die Werke verteilte Auswahl verwendet.
-6. Entwurf schreiben oder KI-Antwort übernehmen, gezielte Rückmeldung vorbereiten und Textfassungen sichern.
-7. Ursprüngliche Stelle, bessere Fassung, Begründung und eine konkrete Regel speichern. Aktive Regeln werden bei folgenden Aufträgen berücksichtigt; sie können pausiert werden.
-8. Bibliothek regelmässig als JSON herunterladen. Ein Import ergänzt neue Autorenprofile und überschreibt keine bestehenden. Für die gemeinsame Weiterarbeit kann die Datei gezielt bereitgestellt werden.
+Die Oberfläche zeigt jeweils einen Schritt. Links kannst du jederzeit wechseln.
+
+1. **Werke:** Autorin oder Autor eintragen, Dateien auswählen und «Weiter zum Autorenprofil» anklicken.
+2. **Autorenprofil:** «Analyseauftrag erstellen» → «Auftrag kopieren» → in ChatGPT absenden. Nur die Antwort in «Antwort von ChatGPT: Autorenprofil» einfügen. Belege prüfen. «Profil speichern → Geschichte planen» führt weiter.
+3. **Geschichte:** Situation und Konflikt beschreiben. «Schreibauftrag erstellen» → in ChatGPT absenden. Die erzeugte Geschichte in «Deine Geschichte» einfügen oder direkt selbst schreiben. «Geschichte speichern → Überarbeiten» führt weiter.
+4. **Überarbeiten:** «Überarbeitungsauftrag erstellen» → in ChatGPT absenden. Die Vorschläge haben ein eigenes Antwortfeld und ersetzen den Text nicht. «Zur Geschichte und überarbeiten» führt zum Entwurf zurück. Optional konkrete Feedbackregeln für nächste Texte speichern.
+
+Aufträge, Profilanalysen und Geschichten haben getrennte Felder. Kopierte Aufträge werden beim Speichern abgefangen; erkennbare Analysen im Geschichtenfeld erhalten einen Hinweis und können ausdrücklich ins Profil kopiert werden. Die Erkennung ist heuristisch. Bestehende Daten bleiben erhalten. Alte Antworten sind unter «Sicherung & Betriebsart» erreichbar; alte Fassungen bleiben in der jeweiligen Versionsgeschichte.
+
+Unter «Sicherung & Betriebsart» die Bibliothek regelmässig als JSON herunterladen. Auf GitHub Pages erfolgt die KI-Arbeit durch den manuellen Wechsel zu ChatGPT. Die lokale Fassung bietet zusätzlich den API-Modus; dafür erscheinen im jeweiligen Schritt passende Schaltflächen.
 
 ## Zwei Betriebsarten
 
