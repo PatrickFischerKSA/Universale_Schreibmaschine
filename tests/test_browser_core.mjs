@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {webcrypto} from 'node:crypto';
+globalThis.window={};
+const {segment,words,retrieve,representative,makePrompt}=await import('../docs/browser-api.js');
+const text=('Eine Figur wartet im Regen. Dann entscheidet sie sich zu gehen.\n\n').repeat(130);
+const ps=segment([{location:'Test','text':text}],'werk');
+assert.deepEqual(words(ps.map(p=>p.text).join(' ')),words(text));
+for(const p of ps)assert.equal(p.text,text.slice(p.start,p.end));
+assert(retrieve(ps,'Regen').length>0);assert.equal(retrieve(ps,'Wüstensand').length,0);
+const a={id:'autor',name:'Test',works:[{title:'Werk',passages:ps}],profiles:[{text:'Belegtes Profil'}],feedback:[{rule:'Aktive Regel',active:true},{rule:'INAKTIV',active:false}]};
+const prompt=makePrompt(a,'write',{task:'Eine Szene im Regen',length:800});
+assert(prompt.text.includes('Aktive Regel'));assert(!prompt.text.includes('INAKTIV'));assert(prompt.text.includes('Belegtes Profil'));assert(prompt.passage_ids.length>0);
+assert.throws(()=>makePrompt(a,'write',{}));assert.throws(()=>makePrompt(a,'review',{}));
+console.log('PASS: browser segmentation, provenance, retrieval, profile/rules, required input');
