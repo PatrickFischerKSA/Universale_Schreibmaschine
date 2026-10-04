@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id),token=document.querySelector('meta[name="workshop-token"]').content;
-let library=[],current=null,selection=new Set(),promptMeta=null,timer,saveQueue=Promise.resolve();
+let serverKeyConfigured=false;let library=[],current=null,selection=new Set(),promptMeta=null,timer,saveQueue=Promise.resolve();
 const workspaceFields=['task','genre','length','profile','draft','prompt','before','after','reason','rule','response','reviewResponse'];
 const msg=(text,error=false)=>{$('status').textContent=text;$('status').classList.toggle('error',error)};
 const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e};
@@ -34,7 +34,7 @@ function render(a,fill=false){
 }
 function selectionStatus(){$('selectionInfo').textContent=selection.size?selection.size+' Passagen ausgewählt (höchstens 8). Ohne Auswahl wird automatisch eine begrenzte Auswahl zusammengestellt.':'Ohne eigene Auswahl verwendet die Analyse die vorgeschlagene Stichprobe.';}
 function showPassages(ps){$('passages').replaceChildren();if(!ps.length)$('passages').append(node('p','Keine Treffer. Versuche andere Wörter oder «Passagen ansehen».'));for(const p of ps){const d=node('details'),s=node('summary',p.title+' · '+p.location);d.append(s);const l=node('label'),check=node('input');check.type='checkbox';check.checked=selection.has(p.id);check.onchange=()=>{if(check.checked&&selection.size>=8){check.checked=false;msg('Höchstens acht Passagen auswählen.',true);return;}check.checked?selection.add(p.id):selection.delete(p.id);selectionStatus();};l.append(check,document.createTextNode('Für den nächsten Auftrag auswählen'));d.append(l,node('small','ID '+p.id+' · Zeichen '+p.start+'–'+p.end),node('div',p.text,'passage'));$('passages').append(d);}}
-async function refresh(selectId){const res=await api('library');library=res.authors;$('authorSelect').replaceChildren(node('option','Autorin oder Autor wählen'));$('authorSelect').firstChild.value='';for(const a of library){const o=node('option',a.name);o.value=a.id;$('authorSelect').append(o);}if(selectId){$('authorSelect').value=selectId;const a=library.find(x=>x.id===selectId);if(a)render(a,true);}if(res.key_configured)$('keyStatus').textContent='Ein serverseitiger API-Schlüssel ist eingerichtet. Dieses Feld kann leer bleiben.';}
+async function refresh(selectId){const res=await api('library');serverKeyConfigured=!!res.key_configured;library=res.authors;$('authorSelect').replaceChildren(node('option','Autorin oder Autor wählen'));$('authorSelect').firstChild.value='';for(const a of library){const o=node('option',a.name);o.value=a.id;$('authorSelect').append(o);}if(selectId){$('authorSelect').value=selectId;const a=library.find(x=>x.id===selectId);if(a)render(a,true);}if(res.key_configured)$('keyStatus').textContent='Ein serverseitiger API-Schlüssel ist eingerichtet. Dieses Feld kann leer bleiben.';}
 function queueSave(){if(!current)return;clearTimeout(timer);const authorId=current.id,data=Object.fromEntries(workspaceFields.map(id=>[id,$(id).value]));$('saveState').textContent='Speichern …';timer=setTimeout(()=>persist(authorId,data),500);}
 function persist(authorId,data){saveQueue=saveQueue.then(()=>api('workspace',{author_id:authorId,workspace:data})).then(a=>{const index=library.findIndex(x=>x.id===a.id);if(index>=0)library[index]=a;if(current?.id===a.id){current=a;$('saveState').textContent='Lokal gespeichert.';}}).catch(e=>{$('saveState').textContent='Nicht gespeichert: '+e.message;});return saveQueue;}
 async function flush(){clearTimeout(timer);if(current)await persist(current.id,Object.fromEntries(workspaceFields.map(id=>[id,$(id).value])));}
@@ -103,3 +103,46 @@ $('toDraft').onclick=run(()=>{if(isCopiedPrompt($('response').value)||isAnalysis
 const recovery=node('button','Analyse aus dem bisherigen Geschichtenfeld holen','secondary');recovery.type='button';recovery.id='profileRecovery';recovery.onclick=()=>$('recoverProfile').click();$('profile').before(recovery);
 const baseUpdateJourney=updateJourney;updateJourney=function(){baseUpdateJourney();$('profileRecovery').hidden=!isAnalysis($('draft').value)||isCopiedPrompt($('draft').value);};
 showStage('corpus',false);
+
+// Direct API edition: one action creates the prompt and the answer in-place.
+let generationBusy=false,returnFromSettings='profileSection';
+const directMode=()=>!window.browserAPI&&$('mode').value==='api';
+const copyJourney=document.querySelector('#journey p').textContent;
+const profileHelp=$('profile').previousElementSibling,copyProfileHelp=profileHelp.textContent;
+const draftHelp=$('draft').previousElementSibling,copyDraftHelp=draftHelp.textContent;const reviewHelp=$('learning').querySelector('h2+p'),copyReviewHelp=reviewHelp.textContent;
+const apiJourney=updateJourney;updateJourney=function(){apiJourney();if(directMode()&&current?.works.length&&!current.profiles.length)$('nextHint').textContent=$('profile').value.trim()?'Autorenprofil prüfen und speichern.':'In Schritt 2 «Autorenprofil erstellen» anklicken.';};
+function syncApiUI(){
+ const direct=directMode();$('apiBanner').hidden=!direct;draftHelp.textContent=direct?'Hier erscheint die erzeugte Geschichte. Du kannst sie jederzeit selbst bearbeiten.':copyDraftHelp;reviewHelp.textContent=direct?'Klicke auf «Rückmeldung erhalten». Überarbeite danach deine Geschichte neben den Vorschlägen und sichere die neue Fassung.':copyReviewHelp;profileHelp.textContent=direct?'Das erzeugte Profil erscheint hier. Prüfe die Belege, passe es bei Bedarf an und speichere es.':copyProfileHelp;
+ document.querySelector('#journey p').textContent=direct?'Die KI schreibt direkt in das passende Feld. Prüfe das Ergebnis und sichere danach eine Fassung.':copyJourney;
+ for(const [kind,label] of Object.entries({analyse:'Autorenprofil erstellen',write:'Geschichte schreiben',review:'Rückmeldung erhalten'})){
+  $(kind==='analyse'?'analyse':kind==='write'?'write':'review').textContent=direct?label:{analyse:'Analyseauftrag erstellen',write:'Schreibauftrag erstellen',review:'Überarbeitungsauftrag erstellen'}[kind];
+  const box=$('exchange-'+kind);box.querySelector('h3').textContent=direct?'KI-Auftrag und Ergebnis':'Auftrag an ChatGPT übergeben';
+  box.querySelector('p').hidden=direct;box.querySelector('.actions').hidden=direct;
+ }
+ document.querySelector('label[for="profile"]').textContent=direct?'Autorenprofil · KI-Ergebnis zum Prüfen':'Antwort von ChatGPT: Autorenprofil';
+ document.querySelector('label[for="reviewResponse"]').textContent=direct?'Verbesserungsvorschläge der KI':'Antwort von ChatGPT: Verbesserungsvorschläge';
+ $('apiConnection').textContent=$('model').value.trim()&&(serverKeyConfigured||$('key').value.trim())?' Konfiguriert · Verbindung noch nicht geprüft.':' Modell und API-Schlüssel einrichten.';
+}
+$('configureApi').onclick=()=>{returnFromSettings=activeStage;showStage('settings');$('key').focus();};
+$('useApi').onclick=()=>{if(!$('model').value.trim()||(!serverKeyConfigured&&!$('key').value.trim())){msg('Bitte Modell-ID und API-Schlüssel eintragen.',true);return;}syncApiUI();showStage(current?returnFromSettings:'corpus');msg('API eingerichtet. Der nächste KI-Button erstellt das Ergebnis direkt hier.');};
+const guidedModeChange=$('mode').onchange;$('mode').onchange=()=>{guidedModeChange();syncApiUI();};
+async function generateInPlace(kind){
+ if(generationBusy)return;
+ if(!$('model').value.trim()||(!serverKeyConfigured&&!$('key').value.trim())){returnFromSettings=activeStage;showStage('settings');msg('Einmal Modell-ID und API-Schlüssel eintragen, dann kannst du direkt weiterarbeiten.',true);return;}
+ const target={analyse:'profile',write:'draft',review:'reviewResponse'}[kind],field=$(target);
+ if(field.value.trim()&&!confirm('Den Text in diesem Feld durch ein neues KI-Ergebnis ersetzen? Gespeicherte Versionen bleiben erhalten.'))return;
+ const authorId=requireAuthor();generationBusy=true;field.readOnly=true;$('authorSelect').disabled=true;
+ try{
+  await prepare(kind);$('note-'+kind).textContent='Die KI arbeitet … Das kann einige Minuten dauern. Bestehender Text bleibt bis zum Ergebnis erhalten.';
+  const result=await api('generate',{prompt:stagePrompts[kind].text,model:$('model').value.trim(),key:$('key').value.trim()});
+  if(current?.id!==authorId)throw Error('Autorenbibliothek gewechselt. Antwort wurde nicht zugeordnet.');
+  if(!result.text?.trim())throw Error('Keine Textantwort erhalten. Vorhandener Text bleibt erhalten.');
+  field.value=result.text;feedback();await flush();
+  const complete=result.status==='completed';$('note-'+kind).textContent=complete?'Ergebnis eingefügt und lokal gespeichert. Bitte prüfen.':'Unvollständige Antwort eingefügt: '+(result.incomplete_reason||result.status)+'. Noch nicht als fertige Fassung verwenden.';
+  msg($('note-'+kind).textContent,!complete);field.scrollIntoView({block:'center'});$('apiConnection').textContent=' Verbindung erfolgreich.';
+ }catch(e){$('note-'+kind).textContent='Keine neue Antwort: '+e.message;throw e;}
+ finally{generationBusy=false;field.readOnly=false;$('authorSelect').disabled=false;}
+}
+for(const [id,kind] of [['analyse','analyse'],['write','write'],['review','review']])$(id).onclick=run(()=>directMode()?generateInPlace(kind):prepare(kind));
+if(!window.browserAPI&&new URLSearchParams(location.search).has('api'))$('mode').value='api';
+$('mode').onchange();

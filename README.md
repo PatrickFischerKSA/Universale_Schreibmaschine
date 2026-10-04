@@ -19,7 +19,7 @@ Die Oberfläche zeigt jeweils einen Schritt. Links kannst du jederzeit wechseln.
 1. **Werke:** Autorin oder Autor eintragen, Dateien auswählen und «Weiter zum Autorenprofil» anklicken.
 2. **Autorenprofil:** «Analyseauftrag erstellen» → «Auftrag kopieren» → in ChatGPT absenden. Nur die Antwort in «Antwort von ChatGPT: Autorenprofil» einfügen. Belege prüfen. «Profil speichern → Geschichte planen» führt weiter.
 3. **Geschichte:** Situation und Konflikt beschreiben. «Schreibauftrag erstellen» → in ChatGPT absenden. Die erzeugte Geschichte in «Deine Geschichte» einfügen oder direkt selbst schreiben. «Geschichte speichern → Überarbeiten» führt weiter.
-4. **Überarbeiten:** «Überarbeitungsauftrag erstellen» → in ChatGPT absenden. Die Vorschläge haben ein eigenes Antwortfeld und ersetzen den Text nicht. «Zur Geschichte und überarbeiten» führt zum Entwurf zurück. Optional konkrete Feedbackregeln für nächste Texte speichern.
+4. **Überarbeiten:** «Überarbeitungsauftrag erstellen» → in ChatGPT absenden. Die Vorschläge haben ein eigenes Antwortfeld und ersetzen den Text nicht. Die Geschichte lässt sich direkt neben der Rückmeldung bearbeiten. Optional konkrete Feedbackregeln für nächste Texte speichern.
 
 Aufträge, Profilanalysen und Geschichten haben getrennte Felder. Kopierte Aufträge werden beim Speichern abgefangen; erkennbare Analysen im Geschichtenfeld erhalten einen Hinweis und können ausdrücklich ins Profil kopiert werden. Die Erkennung ist heuristisch. Bestehende Daten bleiben erhalten. Alte Antworten sind unter «Sicherung & Betriebsart» erreichbar; alte Fassungen bleiben in der jeweiligen Versionsgeschichte.
 
@@ -67,3 +67,9 @@ Automatische Textauswahl: Kapitelverzeichnisse, kurze Titel- und Verlagsseiten w
 Prompt-Ausschnitte werden über PDF-Seitengrenzen hinweg bis zu Satzgrenzen erweitert. Auch die Zeichenbegrenzung kürzt nur an erkannten Satzenden. Alle beteiligten Seiten und ihre Zeichenbereiche werden ausgewiesen. Originalpassagen und gespeicherte Beleg-IDs bleiben erhalten.
 
 Bei der Überarbeitung stehen Rückmeldung und derselbe Geschichteneditor nebeneinander (auf schmalen Bildschirmen untereinander). «Überarbeitete Fassung sichern» speichert eine Version und bleibt bei der Überarbeitung. Die bisherigen Fassungen bleiben erhalten.
+
+## Direkte API-Fassung starten
+
+`Starten-API.command` starten und http://127.0.0.1:18874/?api öffnen. Unter «API einrichten» Modell-ID und eigenen OpenAI-API-Schlüssel eingeben und «Einstellungen übernehmen und weiter» wählen. Danach erzeugen «Autorenprofil erstellen», «Geschichte schreiben» und «Rückmeldung erhalten» die Antwort direkt im passenden Arbeitsfeld. Es ist kein Wechsel zu ChatGPT nötig. Ein bestehender Text wird nur nach Bestätigung ersetzt; bei Fehlern bleibt er erhalten. Unvollständige Antworten werden ausdrücklich markiert.
+
+Die GitHub-Pages-Website bleibt die serverlose Kopierfassung. Der lokale API-Server hält den Schlüssel aus dem öffentlichen Projekt heraus. Vorhandene Bibliotheken können per JSON-Export/-Import übernommen werden. Der Schlüssel gilt nur für die laufende Seite und wird nicht exportiert. Ohne eigenen API-Zugang kann keine echte Generierung geprüft werden.

@@ -61,11 +61,14 @@ def generate(prompt,model,key):
     req=Request('https://api.openai.com/v1/responses',data=json.dumps(body).encode(),headers={'Authorization':'Bearer '+key,'Content-Type':'application/json'},method='POST')
     try:
         with urlopen(req,timeout=180) as r:result=json.load(r)
-    except HTTPError as e:raise ValueError(f'KI-Anfrage abgelehnt (HTTP {e.code}). Schlüssel, Modellzugang und Guthaben prüfen.') from None
+    except HTTPError as e:
+        messages={401:'API-Schlüssel ungültig. Bitte neu eintragen.',403:'Dieser API-Zugang darf das Modell nicht nutzen.',404:'Modell nicht gefunden. Bitte die Modell-ID prüfen.',429:'API-Limit oder Guthaben erschöpft. Konto prüfen und später erneut versuchen.'}
+        raise ValueError(messages.get(e.code,f'KI-Dienst meldet HTTP {e.code}. Später erneut versuchen.')) from None
     except (URLError,TimeoutError):raise ValueError('KI-Dienst nicht erreichbar oder Zeitlimit überschritten. Erneut versuchen oder Kopiermodus verwenden.') from None
+    if result.get('status') not in ('completed','incomplete'):raise ValueError('Die KI-Anfrage wurde nicht abgeschlossen. Vorhandener Text bleibt erhalten.')
     text='\n'.join(c.get('text','') for o in result.get('output',[]) if o.get('type')=='message' for c in o.get('content',[]) if c.get('type')=='output_text')
     if not text:raise ValueError('Die KI hat keinen Text geliefert. Modell oder Auftrag prüfen.')
-    return {'text':text,'status':result.get('status','unknown'),'usage':result.get('usage',{}),'model':result.get('model',model)}
+    return {'text':text,'status':result.get('status','unknown'),'incomplete_reason':(result.get('incomplete_details') or {}).get('reason',''),'usage':result.get('usage',{}),'model':result.get('model',model)}
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self,*args):pass
