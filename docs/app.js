@@ -69,3 +69,6 @@ async function rebuildSavedPrompt(a){const old=a.workspace.prompt;const kind=/An
 function clearContactAutofill(){for(const id of ['authorName','importAuthorName']){const field=$(id);if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value.trim()))field.value='';}}
 for(const id of ['authorName','importAuthorName'])for(const event of ['input','change','blur'])$(id).addEventListener(event,clearContactAutofill);
 window.addEventListener('pageshow',clearContactAutofill);clearContactAutofill();
+
+// Multiline controls are excluded from browser contact-autofill heuristics.
+for(const id of ['authorName','importAuthorName'])$(id).addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();if(id==='authorName')$('authorForm').requestSubmit();else $('files').click();}});
