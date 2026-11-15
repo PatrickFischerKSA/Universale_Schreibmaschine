@@ -73,3 +73,27 @@ Bei der Überarbeitung stehen Rückmeldung und derselbe Geschichteneditor nebene
 `Starten-API.command` starten und http://127.0.0.1:18874/?api öffnen. Unter «API einrichten» Modell-ID und eigenen OpenAI-API-Schlüssel eingeben und «Einstellungen übernehmen und weiter» wählen. Danach erzeugen «Autorenprofil erstellen», «Geschichte schreiben» und «Rückmeldung erhalten» die Antwort direkt im passenden Arbeitsfeld. Es ist kein Wechsel zu ChatGPT nötig. Ein bestehender Text wird nur nach Bestätigung ersetzt; bei Fehlern bleibt er erhalten. Unvollständige Antworten werden ausdrücklich markiert.
 
 Die GitHub-Pages-Website bleibt die serverlose Kopierfassung. Der lokale API-Server hält den Schlüssel aus dem öffentlichen Projekt heraus. Vorhandene Bibliotheken können per JSON-Export/-Import übernommen werden. Der Schlüssel gilt nur für die laufende Seite und wird nicht exportiert. Ohne eigenen API-Zugang kann keine echte Generierung geprüft werden.
+
+## Schreibatelier: Erstfassung, Rückmeldung und Überarbeitung
+
+[Schreibatelier auf GitHub Pages öffnen](https://patrickfischerksa.github.io/Universale_Schreibmaschine/atelier.html).
+Das Atelier ist eine Ergänzung zur Autorenbibliothek. Es orientiert sich an der Zweiteilung
+des Uetiker Modells, ist aber keine Prüfungsumgebung. Fassung A wird als Vergleich
+gesichert; danach stehen gezielte Feedbackaufträge, Fassung B und die Reflexion bereit.
+Der Browser speichert ein Projekt lokal. Der Markdown-Export umfasst beide Fassungen,
+Rückmeldung und Reflexion, einschliesslich früherer im Atelier archivierter Fassungen.
+
+### API-Vertrag für das Atelier
+
+GitHub Pages liefert die Oberfläche aus. Für direkte Rückmeldungen betreibst du einen
+separaten HTTPS-Dienst. Trage seine URL im Atelier ein. Der Kopiermodus bleibt ohne Dienst nutzbar.
+
+- Anfrage: `POST` mit `Content-Type: application/json` und Body `{"prompt":"…"}`.
+- Erfolg: HTTP 200 mit JSON `{"text":"…"}`; Fehler: passender HTTP-Status.
+- Der Dienst beantwortet den CORS-Preflight `OPTIONS` für den Ursprung
+  `https://patrickfischerksa.github.io` und erlaubt `POST` sowie `Content-Type`.
+  Für den lokalen Betrieb zusätzlich den tatsächlich verwendeten lokalen Ursprung erlauben.
+- Anbieter-Schlüssel bleiben im Dienst. Der Browseraufruf führt keine Cookies oder
+  Authorization-Header mit. CORS allein schützt keinen kostenpflichtigen Endpunkt:
+  begrenze Anfragen und Budget serverseitig und nutze einen zugangsbeschränkten Dienst,
+  beispielsweise hinter einem Schulnetz oder VPN.

@@ -17,3 +17,5 @@ for asset in ('app.js','browser-api.js','style.css'):
     html=html.replace('./'+asset,'./'+asset+'?v='+digest)
 html=html.replace('Schreibmaschine · Belegte Merkmale', 'Schreibmaschine · Geführte Werkstatt · Belegte Merkmale')
 (root/'docs/index.html').write_text(html)
+for asset in ('atelier.html','atelier.js'):
+    shutil.copy(root/'static'/asset,root/'docs'/asset)

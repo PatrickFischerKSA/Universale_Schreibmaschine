@@ -86,6 +86,8 @@ class Handler(BaseHTTPRequestHandler):
         if path=='/':
             html=(ROOT/'static/index.html').read_text().replace('__TOKEN__',TOKEN)
             return self.send(200,html.encode(),'text/html; charset=utf-8')
+        if path in ('/atelier.html','/atelier.js'):
+            return self.send(200,(ROOT/'static'/path[1:]).read_bytes(),'text/javascript; charset=utf-8' if path.endswith('.js') else 'text/html; charset=utf-8')
         if path in ('/app.js','/style.css'):
             return self.send(200,(ROOT/'static'/path[1:]).read_bytes(),'text/javascript' if path.endswith('.js') else 'text/css')
         if self.headers.get('X-Workshop-Token')!=TOKEN:return self.send(403,{'error':'Seite neu laden.'})
