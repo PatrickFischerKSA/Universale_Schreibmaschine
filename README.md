@@ -28,7 +28,8 @@ Das integrierte Fanfiction-Beispiel **Gabriele Reuter** öffnet einen vollständ
 lokal bearbeitbaren Arbeitsstand zu *Aus guter Familie*. Es enthält den TextGrid-Volltext,
 ein mit Passagen verknüpftes Stilprofil, vier Feedbackregeln und den alternativen
 Ballplot «Der abgesagte Tanz». In «Überarbeiten» zeigt der A/B-Vergleich die ausgearbeitete
-Garderobenszene, vier kommentierte Änderungen und die Originalpassagen im Zusammenhang.
+drei ausgearbeiteten Szenen in beiden Manuskriptfassungen, zehn kommentierte Änderungen
+und die Originalpassagen im Zusammenhang. Beide Manuskripte sind als Markdown verfügbar.
 Erneutes Öffnen erhält die vorhandene Arbeit.
 [Textquelle und Lizenz](docs/examples/REUTER-QUELLE.md).
 

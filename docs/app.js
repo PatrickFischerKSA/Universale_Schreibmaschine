@@ -604,7 +604,7 @@ $('openReuter').onclick = run(async () => {
   showStage('learning');
   $('reuterComparison').open = true;
   await showReuterComparison();
-  msg('Reuter-Beispiel geöffnet. Die Garderobenszene steht im A/B-Vergleich bereit.');
+  msg('Reuter-Beispiel geöffnet. Das vollständige Manuskript und die Szenenvergleiche stehen bereit.');
 });
 
 
@@ -623,7 +623,7 @@ async function showReuterComparison() {
   const body = $('reuterComparisonBody');
   if (body.dataset.loaded) return;
   body.textContent = 'A/B-Vergleich wird geladen …';
-  reuterComparisonRequest ||= fetch('./examples/reuter-garderobe.json').then(response => {
+  reuterComparisonRequest ||= fetch('./examples/reuter-manuskript.json').then(response => {
     if (!response.ok) throw Error('Der A/B-Vergleich konnte nicht geladen werden.');
     return response.json();
   }).catch(error => {
@@ -631,42 +631,64 @@ async function showReuterComparison() {
     throw error;
   });
   try {
-    const {snapshot,annotations} = await reuterComparisonRequest;
-    const grid = node('div',undefined,'revision-grid');
-    for (const [title,text] of [['Fassung A · Erstentwurf',snapshot.draftA],['Fassung B · Überarbeitung',snapshot.draft]]) {
-      const column = node('div');
-      column.append(node('h3',title));
-      for (const paragraph of text.split('\n\n')) column.append(node('p',paragraph));
-      grid.append(column);
-    }
-    const changes = node('div');
-    const passages = new Map(current?.works.flatMap(work => work.passages.map(p => [p.id,p])) || []);
-    changes.append(node('h3','Vier Entscheidungen bei der Überarbeitung'));
-    for (const item of annotations) {
-      const card = node('details');
-      card.append(node('summary',item.title));
-      for (const [label,text] of [
-        ['Fassung A','«'+item.before+'»'],['Fassung B','«'+item.after+'»'],
-        ['Reuter · '+item.id+' · '+item.location,'«'+item.quote+'»'],
-        ['Feedbackregel',item.rule],['Wirkung',item.effect]
-      ]) {
-        const p = node('p');
-        p.append(node('strong',label+' · '),document.createTextNode(text));
-        card.append(p);
-      }
-      const passage = passages.get(item.id);
-      if (passage) {
-        const source = node('details');
-        source.append(node('summary','Originalpassage im Zusammenhang lesen'),node('div',passage.text,'passage'));
-        card.append(source);
-      }
-      changes.append(card);
-    }
-    changes.append(node('p',snapshot.reflection));
-    body.replaceChildren(grid,changes);
+    const manuscript = await reuterComparisonRequest;
+    if (!isReuterExample()) return;
+    renderReuterView(manuscript);
     body.dataset.loaded = 'true';
   } catch (error) { body.textContent = error.message; }
 }
+function renderReuterView(manuscript) {
+  const body = $('reuterComparisonBody');
+  const view = $('reuterView').value;
+  if (view === 'a' || view === 'b') {
+    const field = view === 'a' ? 'draftA' : 'draft';
+    const title = node('h3',manuscript.title+' · Fassung '+view.toUpperCase());
+    const chapters = manuscript.scenes.map(scene => {
+      const chapter = node('section');
+      chapter.append(node('h3',scene.title));
+      for (const paragraph of scene.snapshot[field].split('\n\n')) chapter.append(node('p',paragraph));
+      return chapter;
+    });
+    body.replaceChildren(title,...chapters);
+    return;
+  }
+  const {snapshot,annotations} = manuscript.scenes.find(scene => scene.id === view);
+  const grid = node('div',undefined,'revision-grid');
+  for (const [title,text] of [['Fassung A · Erstentwurf',snapshot.draftA],['Fassung B · Überarbeitung',snapshot.draft]]) {
+    const column = node('div');
+    column.append(node('h3',title));
+    for (const paragraph of text.split('\n\n')) column.append(node('p',paragraph));
+    grid.append(column);
+  }
+  const changes = node('div');
+  const passages = new Map(current?.works.flatMap(work => work.passages.map(p => [p.id,p])) || []);
+  changes.append(node('h3','Entscheidungen bei der Überarbeitung'));
+  for (const item of annotations) {
+    const card = node('details');
+    card.append(node('summary',item.title));
+    for (const [label,text] of [
+      ['Fassung A','«'+item.before+'»'],['Fassung B','«'+item.after+'»'],
+      ['Reuter · '+item.id+' · '+item.location,'«'+item.quote+'»'],
+      ['Feedbackregel',item.rule],['Wirkung',item.effect]
+    ]) {
+      const p = node('p');
+      p.append(node('strong',label+' · '),document.createTextNode(text));
+      card.append(p);
+    }
+    const passage = passages.get(item.id);
+    if (passage) {
+      const source = node('details');
+      source.append(node('summary','Originalpassage im Zusammenhang lesen'),node('div',passage.text,'passage'));
+      card.append(source);
+    }
+    changes.append(card);
+  }
+  changes.append(node('p',snapshot.reflection));
+  body.replaceChildren(grid,changes);
+}
+$('reuterView').addEventListener('change',run(async () => {
+  if (reuterComparisonRequest) renderReuterView(await reuterComparisonRequest);
+}));
 $('reuterComparison').addEventListener('toggle',() => {
   if ($('reuterComparison').open) void showReuterComparison();
 });
