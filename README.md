@@ -74,6 +74,17 @@ Bei der Überarbeitung stehen Rückmeldung und derselbe Geschichteneditor nebene
 
 Die GitHub-Pages-Website bleibt die serverlose Kopierfassung. Der lokale API-Server hält den Schlüssel aus dem öffentlichen Projekt heraus. Vorhandene Bibliotheken können per JSON-Export/-Import übernommen werden. Der Schlüssel gilt nur für die laufende Seite und wird nicht exportiert. Ohne eigenen API-Zugang kann keine echte Generierung geprüft werden.
 
+## Plotmaschine
+
+Nach dem Autorenprofil öffnet sich die Plotmaschine mit Prämisse und Einsatz, Figurendossiers,
+neun Stationen nach Yury Nikolskoy und einer sortierbaren Szenenfolge. Wähle eine Szene für
+den Entwurf. Schreib- und Rückmeldungsaufträge berücksichtigen den Plotstand und die gewählte
+Szene neben Stilprofil, Regeln und Textbelegen. «Plot prüfen» zeigt offene Stationen und
+fehlende Teile der Szenenkette. Für Varianten, Kapitelentwürfe und Kontinuitätsfeedback
+kannst du spezifische Aufträge kopieren oder an den eingerichteten API-Dienst senden.
+Illustrationen, Cover und Buchpräsentation lassen sich planen und als Teil des Plotprotokolls
+exportieren.
+
 ## Fassung A und Fassung B
 
 Wähle die Autorenbibliothek, schreibe oder importiere deinen Entwurf im Schreibfeld und

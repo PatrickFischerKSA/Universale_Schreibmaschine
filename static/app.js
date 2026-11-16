@@ -1,6 +1,6 @@
 const $=id=>document.getElementById(id),token=document.querySelector('meta[name="workshop-token"]').content;
 let serverKeyConfigured=false;let library=[],current=null,selection=new Set(),promptMeta=null,timer,saveQueue=Promise.resolve();
-const workspaceFields=['task','genre','length','profile','draft','prompt','before','after','reason','rule','response','reviewResponse','draftA','storyContext','reflection','reviewFocus','abSourceIds'];
+const workspaceFields=['task','genre','length','profile','draft','prompt','before','after','reason','rule','response','reviewResponse','draftA','storyContext','reflection','reviewFocus','abSourceIds','plotState','plotAnswer'];
 const msg=(text,error=false)=>{$('status').textContent=text;$('status').classList.toggle('error',error)};
 const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e};
 async function api(path,data){const r=await fetch('/api/'+path,{method:data?'POST':'GET',headers:{'Content-Type':'application/json','X-Workshop-Token':token},...(data?{body:JSON.stringify(data)}:{})});const result=await r.json();if(!r.ok)throw Error(result.error||'Verarbeitung fehlgeschlagen.');return result;}
@@ -44,7 +44,7 @@ $('authorSelect').onchange=run(async()=>{await flush();const a=library.find(a=>a
 $('files').onclick=event=>{if(!current&&!$('importAuthorName').value.trim()){event.preventDefault();$('importAuthorName').focus();msg('Trage zuerst die Autorin oder den Autor des Werks ein.',true);}};
 $('files').onchange=run(async()=>{const files=Array.from($('files').files);if(!files.length)return;if(!current){const name=$('importAuthorName').value.trim();if(!name)throw Error('Autorin oder Autor fehlt.');const existing=library.find(a=>a.name.toLocaleLowerCase()===name.toLocaleLowerCase());const a=existing||await api('authors',{name});await refresh(a.id);}const id=requireAuthor();await flush();$('files').disabled=true;let ok=0;const errors=[];try{for(const f of files){try{if(f.size>250_000_000)throw Error('Diese Datei ist grösser als 250 MB. Bitte in Bände aufteilen.');msg('Korpus wird erstellt: '+f.name+' – grosse Werke können einige Minuten benötigen.');let a;if(window.browserAPI){a=await api('import',{author_id:id,filename:f.name,title:f.name.replace(/\.[^.]+$/,''),file:f,onProgress:text=>msg(f.name+' · '+text)});}else{const response=await fetch('/api/import-file?'+new URLSearchParams({author_id:id,filename:f.name}),{method:'POST',headers:{'Content-Type':'application/octet-stream','X-Workshop-Token':token},body:f});const result=await response.json();if(!response.ok)throw Error(result.error||'Import fehlgeschlagen.');a=result;}if(current?.id===id)render(a);ok++;}catch(e){errors.push(f.name+': '+e.message);}}msg(ok+' Werke importiert.'+(errors.length?' '+errors.join(' '):''),!!errors.length);}finally{$('files').disabled=false;$('files').value='';}});
 $('search').onclick=run(async()=>showPassages((await api('search',{author_id:requireAuthor(),query:$('query').value})).passages));$('browse').onclick=run(async()=>showPassages(current.works.flatMap(w=>w.passages.map(p=>({...p,title:w.title}))).slice(0,30)));
-async function prepare(kind){await flush();promptMeta=await api('prompt',{author_id:requireAuthor(),kind,selected:kind==='review'?[...abSources()]:[...selection],task:$('task').value,genre:$('genre').value,length:$('length').value,draft:$('draft').value,...(kind==='review'?{draft_a:$('draftA').value,context:$('storyContext').value,focus:$('reviewFocus').value}:{})});$('prompt').value=promptMeta.text;$('prompt').scrollTop=0;$('coverage').textContent='Materialauswahl: '+promptMeta.coverage+'. Enthaltene IDs: '+promptMeta.passage_ids.join(', ');queueSave();msg('Auftrag bereit. Du kannst ihn kopieren oder im API-Modus senden.');$('prompt').scrollIntoView({block:'center'});}
+async function prepare(kind){await flush();promptMeta=await api('prompt',{author_id:requireAuthor(),kind,selected:kind==='review'?[...abSources()]:[...selection],task:$('task').value,genre:$('genre').value,length:$('length').value,draft:$('draft').value,plot:kind==='analyse'?'':plotBrief(readPlot(),true),...(kind==='review'?{draft_a:$('draftA').value,context:$('storyContext').value,focus:$('reviewFocus').value}:{})});$('prompt').value=promptMeta.text;$('prompt').scrollTop=0;$('coverage').textContent='Materialauswahl: '+promptMeta.coverage+'. Enthaltene IDs: '+promptMeta.passage_ids.join(', ');queueSave();msg('Auftrag bereit. Du kannst ihn kopieren oder im API-Modus senden.');$('prompt').scrollIntoView({block:'center'});}
 $('analyse').onclick=run(()=>prepare('analyse'));$('write').onclick=run(()=>prepare('write'));$('review').onclick=run(()=>prepare('review'));
 $('copy').onclick=run(async()=>{if(!$('prompt').value)throw Error('Zuerst einen Auftrag vorbereiten.');try{await navigator.clipboard.writeText($('prompt').value);msg('Prompt kopiert. In ChatGPT einfügen.');}catch{$('prompt').focus();$('prompt').select();msg('Prompt markiert. Mit ⌘+C oder Strg+C kopieren.');}});
 $('mode').onchange=()=>{$('apiSettings').hidden=$('mode').value!=='api';$('send').disabled=$('mode').value!=='api';};$('mode').onchange();
@@ -74,7 +74,7 @@ window.addEventListener('pageshow',clearContactAutofill);clearContactAutofill();
 for(const id of ['authorName','importAuthorName'])$(id).addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();if(id==='authorName')$('authorForm').requestSubmit();else $('files').click();}});
 
 // Guided workflow: each answer has exactly one destination.
-const stages=['corpus','profileSection','writing','learning','settings'];
+const stages=['corpus','profileSection','plot','writing','learning','settings'];
 const stageNames=['Werke laden','Autorenprofil erstellen','Geschichte schreiben','Überarbeiten','Sicherung & Betriebsart'];
 let activeStage='corpus',stagePrompts={};
 function isCopiedPrompt(text){return /^\s*Autorenbibliothek:/i.test(text)&&/QUELLENAUSSCHNITTE|GEPRÜFTES PROFIL/.test(text);}
@@ -84,17 +84,17 @@ function updateJourney(){const hasWorks=!!current?.works.length,hasProfile=!!cur
 for(const link of document.querySelectorAll('nav a'))link.addEventListener('click',e=>{e.preventDefault();showStage(link.hash.slice(1));});
 $('nextProfile').onclick=()=>showStage('profileSection');
 const originalFeedback=feedback;feedback=function(){originalFeedback();if(isCopiedPrompt($('draft').value))$('draftFeedback').textContent='Hier steht ein kopierter Auftrag, noch keine Geschichte. Sende den Auftrag in ChatGPT ab und füge anschliessend die Antwort hier ein.';else if(isAnalysis($('draft').value))$('draftFeedback').textContent='Dieser Text sieht nach einer Stilanalyse aus. Sie gehört ins Autorenprofil in Schritt 2. Du kannst sie mit dem Button unten dorthin kopieren; dieser Text bleibt erhalten.';updateJourney();};
-const originalRender=render;render=function(a,fill=false){originalRender(a,fill);if(fill){$('abPassages').replaceChildren();$('abQuery').value='';stagePrompts={};for(const kind of ['analyse','write','review']){$('exchange-'+kind).hidden=true;$('prompt-'+kind).value='';$('note-'+kind).textContent='';}showStage(!a.works.length?'corpus':a.profiles.length?'writing':'profileSection',false);}else showStage(activeStage,false);};
+const originalRender=render;render=function(a,fill=false){originalRender(a,fill);if(fill){renderPlot();$('abPassages').replaceChildren();$('abQuery').value='';stagePrompts={};for(const kind of ['analyse','write','review']){$('exchange-'+kind).hidden=true;$('prompt-'+kind).value='';$('note-'+kind).textContent='';}showStage(!a.works.length?'corpus':a.profiles.length?(a.workspace.draft?'writing':'plot'):'profileSection',false);}else showStage(activeStage,false);};
 // Generated prompts are recreated explicitly in their own step; legacy text remains in backups.
 rebuildSavedPrompt=async()=>{};
 const originalAuthorChange=$('authorSelect').onchange;$('authorSelect').onchange=async e=>{await originalAuthorChange(e);if(!current)showStage('corpus',false);};
-prepare=async function(kind){requireAuthor();if(kind==='write'&&!current.profiles.length)throw Error('Speichere zuerst das Autorenprofil in Schritt 2.');if(kind==='review'&&(isCopiedPrompt($('draft').value)||isAnalysis($('draft').value)))throw Error('Für die Überarbeitung fehlt eine Geschichte. Im Geschichtenfeld steht eine Analyse oder ein Auftrag.');await flush();const authorId=current.id;const r=await api('prompt',{author_id:authorId,kind,selected:kind==='review'?[...abSources()]:[...selection],task:$('task').value,genre:$('genre').value,length:$('length').value,draft:$('draft').value,...(kind==='review'?{draft_a:$('draftA').value,context:$('storyContext').value,focus:$('reviewFocus').value}:{})});if(current?.id!==authorId)return;stagePrompts[kind]=r;promptMeta=r;$('prompt').value=r.text;$('prompt-'+kind).value=r.text;$('prompt-'+kind).scrollTop=0;$('exchange-'+kind).hidden=false;$('note-'+kind).textContent='Auftrag bereit. Kopiere ihn jetzt nach ChatGPT. Die Antwort gehört in das Feld direkt darunter.';queueSave();$('exchange-'+kind).scrollIntoView({block:'start'});msg('Auftrag erstellt. Jetzt kopieren und in ChatGPT absenden.');};
+prepare=async function(kind){requireAuthor();if(kind==='write'&&!current.profiles.length)throw Error('Speichere zuerst das Autorenprofil in Schritt 2.');if(kind==='review'&&(isCopiedPrompt($('draft').value)||isAnalysis($('draft').value)))throw Error('Für die Überarbeitung fehlt eine Geschichte. Im Geschichtenfeld steht eine Analyse oder ein Auftrag.');await flush();const authorId=current.id;const r=await api('prompt',{author_id:authorId,kind,selected:kind==='review'?[...abSources()]:[...selection],task:$('task').value,genre:$('genre').value,length:$('length').value,draft:$('draft').value,plot:kind==='analyse'?'':plotBrief(readPlot(),true),...(kind==='review'?{draft_a:$('draftA').value,context:$('storyContext').value,focus:$('reviewFocus').value}:{})});if(current?.id!==authorId)return;stagePrompts[kind]=r;promptMeta=r;$('prompt').value=r.text;$('prompt-'+kind).value=r.text;$('prompt-'+kind).scrollTop=0;$('exchange-'+kind).hidden=false;$('note-'+kind).textContent='Auftrag bereit. Kopiere ihn jetzt nach ChatGPT. Die Antwort gehört in das Feld direkt darunter.';queueSave();$('exchange-'+kind).scrollIntoView({block:'start'});msg('Auftrag erstellt. Jetzt kopieren und in ChatGPT absenden.');};
 for(const kind of ['analyse','write','review']){
  $('copy-'+kind).onclick=run(async()=>{const field=$('prompt-'+kind);if(!field.value)throw Error('Erstelle zuerst den Auftrag in diesem Schritt.');try{await navigator.clipboard.writeText(field.value);$('note-'+kind).textContent='Kopiert. In ChatGPT einfügen und absenden. Kopiere danach nur die Antwort zurück.';}catch{field.closest('details').open=true;field.focus();field.select();$('note-'+kind).textContent='Auftrag markiert: mit ⌘C oder Strg+C kopieren, dann in ChatGPT einfügen.';}});
  $('api-'+kind).onclick=run(async()=>{const prompt=$('prompt-'+kind).value;if(!prompt)throw Error('Zuerst den Auftrag erstellen.');if(window.browserAPI)return requestGateway(kind,prompt);if(!$('model').value.trim()){showStage('settings');$('model').focus();throw Error('Trage deine Modell-ID unter Betriebsart ein.');}const target={analyse:'profile',write:'draft',review:'reviewResponse'}[kind];if($(target).value&&!confirm('Den vorhandenen Text in diesem Arbeitsfeld durch die KI-Antwort ersetzen? Gespeicherte Versionen bleiben erhalten.'))return;const id=current.id;$('note-'+kind).textContent='KI erstellt die Antwort …';const result=await api('generate',{prompt,model:$('model').value.trim(),key:$('key').value});if(current?.id!==id)return;$(target).value=result.text;feedback();queueSave();$('note-'+kind).textContent='Antwort eingefügt. Lies und prüfe sie, bevor du sie speicherst.';});
 }
 const originalMode=$('mode').onchange;$('mode').onchange=()=>{originalMode();updateJourney();};
-$('saveProfile').onclick=run(async()=>{const text=$('profile').value.trim();if(!text)throw Error('Füge zuerst die Analyseantwort in das Profilfeld ein.');if(isCopiedPrompt(text))throw Error('Im Profilfeld steht der Auftrag. Hier gehört die Antwort von ChatGPT hinein.');await flush();render(await api('profile',{author_id:requireAuthor(),text,source_ids:stagePrompts.analyse?.passage_ids||[]}));showStage('writing');msg('Autorenprofil gespeichert. Beschreibe jetzt deine Geschichte.');});
+$('saveProfile').onclick=run(async()=>{const text=$('profile').value.trim();if(!text)throw Error('Füge zuerst die Analyseantwort in das Profilfeld ein.');if(isCopiedPrompt(text))throw Error('Im Profilfeld steht der Auftrag. Hier gehört die Antwort von ChatGPT hinein.');await flush();render(await api('profile',{author_id:requireAuthor(),text,source_ids:stagePrompts.analyse?.passage_ids||[]}));showStage('plot');msg('Autorenprofil gespeichert. Plane jetzt Figuren und Handlung.');});
 $('saveDraft').onclick=run(async()=>{const text=$('draft').value.trim();if(!text)throw Error('Schreibe eine Geschichte oder füge die Geschichte aus ChatGPT ein.');if(isCopiedPrompt(text)||isAnalysis(text))throw Error('Dieser Text ist ein Auftrag oder eine Analyse. Bitte in Schritt 2 als Profil verwenden; als Geschichte wird er nicht gespeichert.');if(!$('draftA').value.trim())$('draftA').value=text;await flush();render(await api('draft',{author_id:requireAuthor(),text,prompt:stagePrompts.write?.text||''}));const revising=activeStage==='learning';showStage('learning',!revising);$('revisionSaved').textContent=revising?'Neue Fassung gesichert. Du kannst weiterarbeiten oder die Geschichte herunterladen.':'Geschichte gesichert. Hole jetzt eine Rückmeldung ein oder überarbeite den Text direkt.';msg($('revisionSaved').textContent);});
 $('recoverProfile').onclick=run(()=>{if($('profile').value&&!confirm('Den aktuellen Profiltext durch diese Analyse ersetzen? Gespeicherte Profilversionen bleiben erhalten.'))return;$('profile').value=$('draft').value;feedback();queueSave();showStage('profileSection');msg('Analyse ins Profilfeld kopiert. Prüfe sie und klicke «Profil speichern».');});
 $('toProfile').onclick=run(()=>{if(isCopiedPrompt($('response').value))throw Error('Das ist ein Auftrag. Bitte in ChatGPT absenden und die Analyseantwort verwenden.');transfer('profile');showStage('profileSection');});
@@ -205,12 +205,14 @@ async function requestGateway(kind,prompt) {
     throw Error('Gib eine HTTPS-Adresse ohne Zugangsdaten, Parameter oder Fragment ein.');
   }
   if (generationBusy) return;
-  const field = $({analyse:'profile',write:'draft',review:'reviewResponse'}[kind]);
+  const field = $({analyse:'profile',write:'draft',review:'reviewResponse',plot:'plotAnswer'}[kind]);
+  const status = $('note-'+kind);
   if (field.value.trim() && !confirm('Den vorhandenen Text in diesem Feld durch die neue Antwort ersetzen?')) return;
   const id = requireAuthor();
   generationBusy = true;
   const previous = field.value;
-  $('note-'+kind).textContent = 'Auftrag wird gesendet …';
+  if (status) status.textContent = 'Auftrag wird gesendet …';
+  else msg('Plotauftrag wird gesendet …');
   try {
     const response = await fetch(endpoint.href,{
       method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt}),
@@ -225,9 +227,10 @@ async function requestGateway(kind,prompt) {
     field.value = result.text;
     feedback();
     await flush();
-    $('note-'+kind).textContent = 'Antwort eingefügt. Bitte prüfe sie.';
+    if (status) status.textContent = 'Antwort eingefügt. Bitte prüfe sie.';
+    else msg('Plotantwort eingefügt. Bitte prüfe sie.');
   } catch (error) {
-    if (current?.id === id) $('note-'+kind).textContent = 'Anfrage fehlgeschlagen. Du kannst den Auftrag weiterhin kopieren.';
+    if (current?.id === id && status) status.textContent = 'Anfrage fehlgeschlagen. Du kannst den Auftrag weiterhin kopieren.';
     throw error;
   } finally { generationBusy = false; }
 }
@@ -240,3 +243,206 @@ if ($('legacyAtelier')) {
   try { $('legacyAtelier').hidden = !localStorage.getItem('universale-schreibmaschine.atelier.v1'); }
   catch { /* Browser storage unavailable. */ }
 }
+
+const beats = [
+  ['Hook','Welches Bild oder Rätsel eröffnet die Geschichte?'],
+  ['Auslösendes Ereignis','Was bringt den Alltag aus dem Gleichgewicht?'],
+  ['Erster Wendepunkt','Welche Entscheidung macht eine Rückkehr schwierig?'],
+  ['Erster Druckpunkt','Wann zeigt sich die Macht der Gegenkraft?'],
+  ['Mittelpunkt','Welche Erkenntnis ändert die Strategie?'],
+  ['Zweiter Druckpunkt','Wie trifft die Gegenkraft eine verwundbare Stelle?'],
+  ['Alles ist verloren','Was fällt weg und was bleibt der Hauptfigur?'],
+  ['Klimax','Welche Entscheidung entscheidet den zentralen Konflikt?'],
+  ['Auflösung','Was ist nach der Entscheidung anders?']
+];
+const premiseFields = [
+  ['idea','Prämisse'],['goal','Ziel der Hauptfigur'],['force','Gegenkraft'],
+  ['stakes','Was steht auf dem Spiel?'],['world','Welt, Zeit und verbindliche Fakten']
+];
+const figureFields = [
+  ['name','Name'],['role','Rolle'],['want','Eigenes Ziel'],['wound','Prägende Erfahrung'],
+  ['belief','Überzeugung oder Selbsttäuschung'],['relation','Beziehung und Konflikt'],['voice','Stimme und Eigenheiten']
+];
+const sceneFields = [
+  ['title','Kapitel und Szenentitel'],['beat','Plotstation'],['pov','Perspektive, Ort und Zeit'],
+  ['goal','Szenenziel'],['obstacle','Hindernis'],['choice','Entscheidung oder Wendung'],
+  ['effect','Folge und Anschluss'],['continuity','Fakten, Requisiten oder offene Fäden']
+];
+const bookFields = [
+  ['visual','Bildsprache und visuelle Figurenmerkmale'],['image','Schlüsselszene für eine Illustration'],
+  ['audience','Zielpublikum und Genre'],['cover','Coveridee und Bildtitel'],['pitch','Klappentext oder Buchbeschreibung']
+];
+function readPlot() {
+  try { return JSON.parse($('plotState').value) || {}; }
+  catch { return {}; }
+}
+function writePlot(plot) {
+  $('plotState').value = JSON.stringify(plot);
+  $('plotPrompt').value = '';
+  $('plotChecks').replaceChildren();
+  queueSave();
+}
+function plotFields(base, specs, place, onInput) {
+  for (const [key,title] of specs) {
+    const label = node('label',title);
+    const field = document.createElement(key === 'beat' ? 'select' : 'textarea');
+    if (key === 'beat') {
+      field.append(node('option',''));
+      for (const [name] of beats) field.append(node('option',name));
+    } else { field.rows = 2; field.maxLength = 1800; }
+    field.value = base[key] || '';
+    field.addEventListener('input',() => { base[key] = field.value; onInput(); });
+    label.append(field);
+    place.append(label);
+  }
+}
+function renderPlot() {
+  const plot = readPlot();
+  plot.premise ||= {};
+  plot.book ||= {};
+  plot.beats ||= {};
+  plot.figures ||= [];
+  plot.scenes ||= [];
+  const commit = () => writePlot(plot);
+  for (const id of ['plotPremise','plotBook','plotBeats','plotFigures','plotScenes','plotChecks']) $(id).replaceChildren();
+  $('plotPrompt').value = '';
+  plotFields(plot.premise,premiseFields,$('plotPremise'),commit);
+  plotFields(plot.book,bookFields,$('plotBook'),commit);
+  beats.forEach(([title,question],index) => {
+    if (index % 3 === 0) $('plotBeats').append(node('h3',['Akt I · Aufbruch','Akt II · Eskalation','Akt III · Finale'][index/3]));
+    plotFields(plot.beats,[[title,title+' · '+question]],$('plotBeats'),commit);
+  });
+  function cards(items, specs, container, noun) {
+    items.forEach((item,index) => {
+      const card = node('details');
+      card.open = !item.name && !item.title;
+      card.append(node('summary',item.name || item.title || noun+' '+(index+1)));
+      plotFields(item,specs,card,() => {
+        card.firstChild.textContent = item.name || item.title || noun+' '+(index+1);
+        commit();
+      });
+      if (noun === 'Szene') {
+        const pick = node('button',plot.active === item.id?'Für den Entwurf gewählt':'Für den Entwurf wählen','secondary');
+        pick.type = 'button';
+        pick.setAttribute('aria-pressed',String(plot.active === item.id));
+        pick.onclick = () => { plot.active = item.id; commit(); renderPlot(); };
+        card.append(pick);
+        for (const delta of [-1,1]) {
+          const move = node('button',delta < 0?'Nach oben':'Nach unten','secondary');
+          move.type = 'button';
+          move.disabled = !items[index+delta];
+          move.onclick = () => {
+            [items[index],items[index+delta]] = [items[index+delta],items[index]];
+            commit(); renderPlot();
+          };
+          card.append(move);
+        }
+      }
+      const remove = node('button',noun+' entfernen','secondary');
+      remove.type = 'button';
+      remove.onclick = () => {
+        if (!confirm(noun+' aus dem Plot entfernen?')) return;
+        items.splice(index,1);
+        if (plot.active === item.id) delete plot.active;
+        commit(); renderPlot();
+      };
+      card.append(remove);
+      $(container).append(card);
+    });
+  }
+  cards(plot.figures,figureFields,'plotFigures','Figur');
+  cards(plot.scenes,sceneFields,'plotScenes','Szene');
+  $('addFigure').onclick = () => { plot.figures.push({role:['Hauptfigur','Gegenfigur','Anker','Verbündete Figur','Mentor'][plot.figures.length] || ''}); commit(); renderPlot(); };
+  $('addScene').onclick = () => { plot.scenes.push({id:crypto.randomUUID()}); commit(); renderPlot(); };
+}
+
+function plotBrief(plot, forDraft=false) {
+  const rows = (record,specs) => specs.filter(([k]) => record?.[k]?.trim()).map(([k,label]) => label+': '+record[k].trim()).join('\n');
+  const active = plot.scenes?.find(scene => scene.id === plot.active);
+  const figures = (plot.figures || []).map(figure => rows(figure,figureFields)).filter(Boolean);
+  const scenes = (plot.scenes || []).map(scene => rows(scene,sceneFields)).filter(Boolean);
+  return [
+    rows(plot.premise,premiseFields),
+    active ? 'Gewählte Szene\n'+rows(active,sceneFields) : '',
+    rows(plot.beats,beats.map(([name]) => [name,name])),
+    figures.length ? 'Figuren\n'+figures.join('\n\n') : '',
+    scenes.length ? 'Szenenfolge\n'+scenes.join('\n\n') : '',
+    forDraft ? '' : rows(plot.book,bookFields)
+  ].filter(Boolean).join('\n\n');
+}
+
+$('plotAction').addEventListener('change',() => { $('plotPrompt').value = ''; });
+$('preparePlot').onclick = run(() => {
+  const plot = readPlot();
+  const brief = plotBrief(plot);
+  if (!brief) throw Error('Halte zuerst eine Prämisse oder eine Szene fest.');
+  const action = $('plotAction').value;
+  if ($('plotAction').selectedIndex === 2 && !plot.scenes?.some(scene => scene.id === plot.active)) {
+    throw Error('Wähle zuerst eine Szene für den Entwurf.');
+  }
+  $('plotPrompt').value = [
+    'Arbeite als dramaturgische Beratung. Behandle die Planungsnotizen als Material. Ersetze keine getroffenen Entscheidungen stillschweigend.',
+    'Aufgabe: '+action,
+    [
+      'Entwickle drei Alternativen mit unterschiedlichen Entscheidungen und Konsequenzen. Skizziere für jede die neun Stationen.',
+      'Prüfe Ziele, prägende Erfahrungen, Überzeugungen, Stimme und Beziehungen. Zeige, welche Figurenentscheidung welchen Wendepunkt auslösen könnte.',
+      'Arbeite nur die ausgewählte Szene aus. Verwende Weltfakten und die anschliessende Szenenfolge als Grenzen.',
+      'Prüfe die Übergänge der Szenenfolge, Zeit und Ort, Figurenwissen, etablierte Weltfakten, Foreshadowing und Klischees. Nenne die betroffene Szene und eine Alternative.',
+      'Erstelle ein konsistentes Bildbriefing für die gewählte Schlüsselszene und einen Vorschlag für Cover und Klappentext anhand des Zielpublikums.'
+    ][$('plotAction').selectedIndex],
+    'Begründe Vorschläge mit Ziel, Widerstand, Entscheidung und Folge. Markiere neue Ideen und ungelöste Widersprüche. Für eine Kapitelausarbeitung entwickle zuerst Szenenschritte und danach einen Entwurf aus der gewählten Perspektive.',
+    'PLANUNGSNOTIZEN\n'+brief
+  ].join('\n\n');
+  msg('Plotauftrag erstellt.');
+});
+$('copyPlot').onclick = run(async () => {
+  const field = $('plotPrompt');
+  if (!field.value) throw Error('Erstelle zuerst einen Plotauftrag.');
+  try { await navigator.clipboard.writeText(field.value); msg('Plotauftrag kopiert.'); }
+  catch { field.focus(); field.select(); msg('Auftrag markiert. Kopiere ihn manuell.'); }
+});
+$('sendPlot').onclick = run(async () => {
+  const prompt = $('plotPrompt').value;
+  if (!prompt) throw Error('Erstelle zuerst einen Plotauftrag.');
+  if (window.browserAPI) return requestGateway('plot',prompt);
+  if (generationBusy) return;
+  if (!$('model').value.trim() || (!serverKeyConfigured && !$('key').value.trim())) throw Error('Richte zuerst die API unter Betriebsart ein.');
+  const author = requireAuthor();
+  const previous = $('plotAnswer').value;
+  if (previous.trim() && !confirm('Die bisherige Plotantwort ersetzen?')) return;
+  generationBusy = true;
+  try {
+    const result = await api('generate',{prompt,model:$('model').value.trim(),key:$('key').value.trim()});
+    if (current?.id !== author || $('plotAnswer').value !== previous) throw Error('Der Arbeitsstand wurde inzwischen bearbeitet.');
+    if (typeof result.text !== 'string' || !result.text.trim()) throw Error('Keine Textantwort erhalten.');
+    $('plotAnswer').value = result.text;
+    await flush();
+    msg(result.status==='completed'?'Plotantwort gespeichert.':'Unvollständige Plotantwort gespeichert.');
+  } finally { generationBusy = false; }
+});
+$('checkPlot').onclick = () => {
+  const plot = readPlot();
+  const findings = [];
+  for (const [key,label] of premiseFields.slice(0,4)) if (!plot.premise?.[key]?.trim()) findings.push(label+' ergänzen.');
+  const missing = beats.filter(([name]) => !plot.beats?.[name]?.trim()).map(([name]) => name);
+  if (missing.length) findings.push('Offene Plotstationen: '+missing.join(', ')+'.');
+  if (!plot.scenes?.length) findings.push('Lege eine Szene an und verbinde ihr Ende mit einer Folge.');
+  for (const [index,scene] of (plot.scenes || []).entries()) {
+    const gaps = ['goal','obstacle','choice','effect'].filter(key => !scene[key]?.trim());
+    if (gaps.length) findings.push((scene.title || 'Szene '+(index+1))+': '+gaps.map(key => sceneFields.find(([k])=>k===key)[1]).join(', ')+' prüfen.');
+  }
+  $('plotChecks').replaceChildren(...(findings.length?findings:['Die Grundfelder sind ausgefüllt. Prüfe nun, ob die Folgen einer Szene die nächste auslösen.']).map(item => node('li',item)));
+};
+$('exportPlot').onclick = run(() => {
+  const brief = plotBrief(readPlot());
+  if (!brief) throw Error('Der Plot ist noch leer.');
+  download('plot.md','# Plot\n\n'+brief+($('plotAnswer').value?'\n\n## Varianten und Rückmeldungen\n\n'+$('plotAnswer').value:''),'text/markdown;charset=utf-8');
+});
+$('plotToDraft').onclick = run(async () => { await flush(); showStage('writing'); });
+const updateWithPlot = updateJourney;
+updateJourney = function() {
+  updateWithPlot();
+  $('sendPlot').hidden = window.browserAPI ? !$('gateway').value.trim() : !directMode();
+};
+$('gateway').addEventListener('input',updateJourney);
+updateJourney();
