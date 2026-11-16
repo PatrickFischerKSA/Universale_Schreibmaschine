@@ -32,15 +32,19 @@ const text=`${free?'Freitextprojekt':'Autorenbibliothek'}: ${a.name}\nMaterialba
 function validate(db){if(db?.version!==1||!Array.isArray(db.authors))throw Error('Ungültige Bibliotheksdatei.');for(const a of db.authors){if(typeof a.name!=='string'||!Array.isArray(a.works)||!Array.isArray(a.profiles)||!Array.isArray(a.feedback)||!Array.isArray(a.drafts))throw Error('Ungültiges Autorenprofil.');for(const w of a.works){if(typeof w.title!=='string'||!Array.isArray(w.units)||w.units.some(u=>typeof u.text!=='string'||typeof u.location!=='string'))throw Error('Ungültiger Volltext.');if(!Array.isArray(w.passages)||w.passages.some(p=>typeof p.text!=='string'||typeof p.id!=='string'))throw Error('Ungültige Passagen.');}if(a.profiles.some(p=>typeof p.text!=='string')||a.feedback.some(f=>typeof f.rule!=='string')||a.drafts.some(d=>typeof d.text!=='string'))throw Error('Ungültige Verlaufsdaten.');}}
 let queue=Promise.resolve();
 async function operate(path,d={}){const db=await load();
-if(path==='example-reuter') {
-  const exampleId = 'example-reuter-aus-guter-familie-v1';
+const examples = {
+  'example-reuter': ['example-reuter-aus-guter-familie-v1','reuter.json'],
+  'example-freitext': ['example-freitext-ki-schreiben-v1','freitext-ki.json']
+};
+if(Object.hasOwn(examples,path)) {
+  const [exampleId,filename] = examples[path];
   const existing = db.authors.find(author => author.id === exampleId);
   if (existing) return {id:existing.id};
-  const response = await fetch(new URL('./examples/reuter.json',import.meta.url));
-  if (!response.ok) throw Error('Das Reuter-Beispiel konnte nicht geladen werden.');
+  const response = await fetch(new URL('./examples/'+filename,import.meta.url));
+  if (!response.ok) throw Error('Das Schreibbeispiel konnte nicht geladen werden.');
   const author = await response.json();
   validate({version:1,authors:[author]});
-  if (author.id !== exampleId) throw Error('Das Reuter-Beispiel hat eine ungültige Kennung.');
+  if (author.id !== exampleId) throw Error('Das Schreibbeispiel hat eine ungültige Kennung.');
   db.authors.push(author);
   await save(db);
   return {id:author.id};

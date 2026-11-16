@@ -24,6 +24,11 @@ Repository herunterladen und entpacken. Auf dem Mac `Starten.command` doppelklic
 
 Modus, Arbeitsstand, Quellen und Regeln werden im jeweiligen Projekt gespeichert.
 
+Das Freitextbeispiel **KI beim Schreibenlernen** enthält eigene Beobachtungen,
+zwei Gegenpositionen, drei verlinkte Quellenkarten und zwei bearbeitbare Essayfassungen.
+Unter «Überarbeiten» zeigen vier Kommentare, wie sich These, Quellengebrauch, Einwand
+und Schlussfolgerung zwischen A und B verändern.
+
 Das integrierte Fanfiction-Beispiel **Gabriele Reuter** öffnet einen vollständigen,
 lokal bearbeitbaren Arbeitsstand zu *Aus guter Familie*. Es enthält den TextGrid-Volltext,
 ein mit Passagen verknüpftes Stilprofil, vier Feedbackregeln und den alternativen

@@ -653,13 +653,6 @@ function renderReuterView(manuscript) {
     return;
   }
   const {snapshot,annotations} = manuscript.scenes.find(scene => scene.id === view);
-  const grid = node('div',undefined,'revision-grid');
-  for (const [title,text] of [['Fassung A · Erstentwurf',snapshot.draftA],['Fassung B · Überarbeitung',snapshot.draft]]) {
-    const column = node('div');
-    column.append(node('h3',title));
-    for (const paragraph of text.split('\n\n')) column.append(node('p',paragraph));
-    grid.append(column);
-  }
   const changes = node('div');
   const passages = new Map(current?.works.flatMap(work => work.passages.map(p => [p.id,p])) || []);
   changes.append(node('h3','Entscheidungen bei der Überarbeitung'));
@@ -684,12 +677,93 @@ function renderReuterView(manuscript) {
     changes.append(card);
   }
   changes.append(node('p',snapshot.reflection));
-  body.replaceChildren(grid,changes);
+  body.replaceChildren(exampleDraftGrid(snapshot),changes);
 }
 $('reuterView').addEventListener('change',run(async () => {
   if (reuterComparisonRequest) renderReuterView(await reuterComparisonRequest);
 }));
 $('reuterComparison').addEventListener('toggle',() => {
   if ($('reuterComparison').open) void showReuterComparison();
+});
+updateJourney();
+
+function exampleDraftGrid(snapshot) {
+  const grid = node('div',undefined,'revision-grid');
+  for (const [title,text] of [['Fassung A · Erstentwurf',snapshot.draftA],['Fassung B · Überarbeitung',snapshot.draft]]) {
+    const column = node('div');
+    column.append(node('h3',title));
+    for (const paragraph of text.split('\n\n')) column.append(node('p',paragraph));
+    grid.append(column);
+  }
+  return grid;
+}
+
+function isFreeExample() {
+  return current?.id === 'example-freitext-ki-schreiben-v1';
+}
+const updateWithFreeExample = updateJourney;
+updateJourney = function() {
+  updateWithFreeExample();
+  $('freeComparison').hidden = !isFreeExample();
+  if (!isFreeExample()) $('freeComparison').open = false;
+};
+
+let freeComparisonRequest;
+async function showFreeComparison() {
+  if (!isFreeExample()) return;
+  const body = $('freeComparisonBody');
+  if (body.dataset.loaded) return;
+  body.textContent = 'A/B-Vergleich wird geladen …';
+  freeComparisonRequest ||= fetch('./examples/freitext-ki-vergleich.json').then(response => {
+    if (!response.ok) throw Error('Der A/B-Vergleich konnte nicht geladen werden.');
+    return response.json();
+  }).catch(error => {
+    freeComparisonRequest = null;
+    throw error;
+  });
+  try {
+    const {snapshot,annotations,sources} = await freeComparisonRequest;
+    if (!isFreeExample()) return;
+    const comments = node('div');
+    comments.append(node('h3','Entscheidungen bei der Überarbeitung'));
+    for (const item of annotations) {
+      const card = node('details');
+      card.append(node('summary',item.title));
+      for (const [label,value] of [
+        ['Fassung A','«'+item.before+'»'],['Fassung B','«'+item.after+'»'],
+        ['Material',item.reference],['Feedbackregel',item.rule],['Wirkung',item.effect]
+      ]) {
+        const paragraph = node('p');
+        paragraph.append(node('strong',label+' · '),document.createTextNode(value));
+        card.append(paragraph);
+      }
+      comments.append(card);
+    }
+    comments.append(node('p',snapshot.reflection));
+    const references = node('details');
+    references.append(node('summary','Quellen Q1–Q3 mit Fundstellen'));
+    for (const source of sources) {
+      const link = node('a',source.id+' · '+source.title);
+      link.href = source.url;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      references.append(link,node('p',source.location+' · '+source.summary));
+    }
+    body.replaceChildren(exampleDraftGrid(snapshot),comments,references);
+    body.dataset.loaded = 'true';
+  } catch (error) { body.textContent = error.message; }
+}
+$('freeExample').hidden = !window.browserAPI;
+$('openFreeExample').onclick = run(async () => {
+  await flush();
+  const result = await api('example-freitext');
+  await refresh(result.id);
+  showStage('learning');
+  $('freeComparison').open = true;
+  await showFreeComparison();
+  msg('Freitextbeispiel geöffnet. Gedanken und Gegenpositionen stehen unter «Material und Diskurs».');
+});
+$('freeComparison').addEventListener('toggle',() => {
+  if ($('freeComparison').open) void showFreeComparison();
 });
 updateJourney();

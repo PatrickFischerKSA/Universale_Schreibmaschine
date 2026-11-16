@@ -1,0 +1,65 @@
+{
+  "snapshot": {
+    "draftA": "Wann soll KI beim Schreiben helfen?\n\nWenn ich einen Aufsatz beginne, habe ich manchmal schon eine Meinung, aber noch keinen ersten Satz. Ein KI-Vorschlag könnte mir dann helfen, schneller anzufangen. Andererseits kenne ich das Gefühl, einen fertigen Vorschlag zu lesen und danach nur noch an seiner Formulierung herumzuarbeiten. Meine eigene Idee gerät dabei leicht aus dem Blick.\n\nManche wollen KI deshalb erst bei der Überarbeitung zulassen. In Uetikon schreibt man zuerst ohne KI und überarbeitet danach mit digitalen Hilfsmitteln. Das zeigt, dass die Zweiteilung funktioniert. Andere finden, KI sollte von Anfang an dabei sein, denn sie kann auf neue Ideen bringen. Beide Seiten haben recht.\n\nIch würde die KI eher später verwenden. Sonst weiss ich nicht, ob der Gedanke von mir kommt. Allerdings kann man das auch nicht immer unterscheiden. Wichtig ist, dass man die Quellen prüft und sich am Ende selbst entscheidet.",
+    "draft": "Wem gehört der erste Satz?\n\nIch tippe einen Satz und lösche ihn gleich wieder. Beim dritten Versuch merke ich, dass ich zwei Fragen vermischt habe: ob KI mir beim Formulieren hilft und ob sie mir schon vorgibt, worüber ich nachdenke. Hätte ich mir gleich einen Einstieg schreiben lassen, hätte ich vielleicht einen eleganteren ersten Absatz. Ob ich die beiden Fragen auseinandergehalten hätte, weiss ich nicht.\n\nEine Schule kann daraus eine Regel ableiten: Die erste Fassung entsteht eigenständig, KI kommt erst bei der Überarbeitung ins Spiel. Philippe Wampfler beschreibt ein solches Verfahren für den Uetiker Maturaufsatz [Q1]. Sein späterer Bericht schildert Überarbeitungen, die aus seiner Sicht präziser wurden, aber auch Texte, deren Stimme durch KI abgeschwächt wurde [Q2]. Das ist ein Bericht über einen konkreten Versuch. Wie sich frühe KI-Hilfe im Vergleich ausgewirkt hätte, lässt sich daraus allein nicht ablesen.\n\nDer stärkste Einwand gegen einen späten Einstieg betrifft ausgerechnet die leere Seite. Wer schon eine Vermutung hat, kann mit einer Rückfrage herausfinden, was an ihr noch unscharf ist. Luís André Beckhauser beschreibt KI als Denkstütze, mit der Schreibende ihre Ideen verbinden und weiterentwickeln können, und betont ihre Verantwortung für das Ergebnis [Q3]. Daraus leite ich für die Schule eine Möglichkeit ab: Der Chat darf vor dem ersten Absatz fragen, welches Beispiel meiner These widerspricht. Ob er mir einen Absatz formulieren darf, ist eine andere Entscheidung.\n\nFür eine Schreibübung würde ich es so versuchen: Zuerst notiere ich eine eigene Vermutung und ein Beispiel. Danach darf die KI mir einen Einwand stellen. Ich schreibe die erste Fassung selbst und lasse mir beim Überarbeiten eine Stelle zeigen, an der meine Begründung noch fehlt. Jede übernommene Tatsachenbehauptung prüfe ich an ihrer Quelle. Wenn ich nachher erklären kann, welcher Einwand meinen Gedanken verändert hat, hat mir die KI beim Denken geholfen. Wenn ich nur den Absatz glatter finde, weiss ich immerhin, wo ich noch einmal anfangen muss.",
+    "reviewResponse": "Von einer allgemeinen Schwierigkeit zu einer beobachtbaren Szene\nA: «habe ich manchmal schon eine Meinung, aber noch keinen ersten Satz»\nB: «Beim dritten Versuch merke ich, dass ich zwei Fragen vermischt habe»\nMaterial: Eigene Gedanken\nFeedbackregel: Zeige zuerst den konkreten Moment, an dem sich eine Frage verändert.\nWirkung: Die gestrichenen Sätze werden zum Anlass für die Leitfrage. Lesende sehen, was beim Formulieren entdeckt wird.\n\nEine Quelle mit passender Reichweite verwenden\nA: «Das zeigt, dass die Zweiteilung funktioniert.»\nB: «Wie sich frühe KI-Hilfe im Vergleich ausgewirkt hätte, lässt sich daraus allein nicht ablesen.»\nMaterial: Q1, Q2\nFeedbackregel: Unterscheide das beschriebene Verfahren, die Beobachtung und die eigene Folgerung.\nWirkung: B nennt neben den positiven Beobachtungen einen Gegenbefund. Aus einem Erfahrungsbericht wird kein allgemeiner Nachweis.\n\nDie Gegenposition in ihrer stärksten Form ausarbeiten\nA: «Andere finden, KI sollte von Anfang an dabei sein, denn sie kann auf neue Ideen bringen.»\nB: «Der Chat darf vor dem ersten Absatz fragen, welches Beispiel meiner These widerspricht.»\nMaterial: Q3\nFeedbackregel: Formuliere den stärksten Einwand und trenne die Quelle von deiner Übertragung auf den Unterricht.\nWirkung: B macht den Unterschied zwischen einer Denkfrage und einem formulierten Ersatzabsatz konkret. Die Unterrichtsregel wird als eigene Ableitung markiert.\n\nEine Entscheidung mit überprüfbaren Schritten abschliessen\nA: «Wichtig ist, dass man die Quellen prüft und sich am Ende selbst entscheidet.»\nB: «Zuerst notiere ich eine eigene Vermutung und ein Beispiel.»\nMaterial: Eigene Gedanken, Q2, Q3\nFeedbackregel: Übersetze deine Schlussfolgerung in prüfbare Handlungen.\nWirkung: B nennt eine Reihenfolge, die Schreibende ausprobieren können. Die Prüfung umfasst Tatsachenbehauptungen und die Frage, welcher Einwand den eigenen Gedanken verändert hat.",
+    "reflection": "Die Überarbeitung schärft meine eigene Unterscheidung zwischen einem KI-Einwand und einem KI-Absatz. Das Uetiker Beispiel liefert eine erprobte Anordnung, Beckhauser eine Denkfigur für frühere Hilfe. Die konkrete Übungsregel ist meine Schlussfolgerung."
+  },
+  "annotations": [
+    {
+      "title": "Von einer allgemeinen Schwierigkeit zu einer beobachtbaren Szene",
+      "before": "habe ich manchmal schon eine Meinung, aber noch keinen ersten Satz",
+      "after": "Beim dritten Versuch merke ich, dass ich zwei Fragen vermischt habe",
+      "reference": "Eigene Gedanken",
+      "rule": "Zeige zuerst den konkreten Moment, an dem sich eine Frage verändert.",
+      "effect": "Die gestrichenen Sätze werden zum Anlass für die Leitfrage. Lesende sehen, was beim Formulieren entdeckt wird."
+    },
+    {
+      "title": "Eine Quelle mit passender Reichweite verwenden",
+      "before": "Das zeigt, dass die Zweiteilung funktioniert.",
+      "after": "Wie sich frühe KI-Hilfe im Vergleich ausgewirkt hätte, lässt sich daraus allein nicht ablesen.",
+      "reference": "Q1, Q2",
+      "rule": "Unterscheide das beschriebene Verfahren, die Beobachtung und die eigene Folgerung.",
+      "effect": "B nennt neben den positiven Beobachtungen einen Gegenbefund. Aus einem Erfahrungsbericht wird kein allgemeiner Nachweis."
+    },
+    {
+      "title": "Die Gegenposition in ihrer stärksten Form ausarbeiten",
+      "before": "Andere finden, KI sollte von Anfang an dabei sein, denn sie kann auf neue Ideen bringen.",
+      "after": "Der Chat darf vor dem ersten Absatz fragen, welches Beispiel meiner These widerspricht.",
+      "reference": "Q3",
+      "rule": "Formuliere den stärksten Einwand und trenne die Quelle von deiner Übertragung auf den Unterricht.",
+      "effect": "B macht den Unterschied zwischen einer Denkfrage und einem formulierten Ersatzabsatz konkret. Die Unterrichtsregel wird als eigene Ableitung markiert."
+    },
+    {
+      "title": "Eine Entscheidung mit überprüfbaren Schritten abschliessen",
+      "before": "Wichtig ist, dass man die Quellen prüft und sich am Ende selbst entscheidet.",
+      "after": "Zuerst notiere ich eine eigene Vermutung und ein Beispiel.",
+      "reference": "Eigene Gedanken, Q2, Q3",
+      "rule": "Übersetze deine Schlussfolgerung in prüfbare Handlungen.",
+      "effect": "B nennt eine Reihenfolge, die Schreibende ausprobieren können. Die Prüfung umfasst Tatsachenbehauptungen und die Frage, welcher Einwand den eigenen Gedanken verändert hat."
+    }
+  ],
+  "sources": [
+    {
+      "id": "Q1",
+      "title": "Philippe Wampfler · Das Uetiker Konzept für den Maturaufsatz (22.03.2026)",
+      "url": "https://schulesocialmedia.com/2026/03/22/texte-ohne-und-mit-ki-schreiben-das-uetiker-konzept-fur-den-maturaufsatz/",
+      "location": "Abschnitte «Die Grundidee» und «Die Umsetzung»",
+      "summary": "Wampfler beschreibt einen zweistufigen Maturaufsatz: Die erste Fassung entsteht ohne KI-Zugriff. In der zweiten Phase können die Schreibenden den eigenen Text mit digitalen Hilfsmitteln verbessern und erweitern. Beleg für ein konkretes Verfahren, keine allgemeine Aussage über die Wirkung jeder frühen KI-Nutzung."
+    },
+    {
+      "id": "Q2",
+      "title": "Philippe Wampfler · Auswertung der Matur mit dem Uetiker Modell (27.06.2026)",
+      "url": "https://schulesocialmedia.com/2026/06/27/die-zukunft-von-vibe-writing-reflexion-und-auswertung-der-matur-mit-dem-uetiker-modell/",
+      "location": "Abschnitte «Das Ergebnis» und «Das Problem des Fremdwissens»",
+      "summary": "Wampfler berichtet aus seiner Sicht von gelungenen Korrekturen in Fassung B und beobachtet auch Fälle, in denen KI die eigene Stimme abschwächte. Beim Ergänzen von Fremdwissen unterscheidet er passende Ergänzungen von schlecht integrierten Verweisen. Der Beitrag reflektiert eine konkrete Durchführung."
+    },
+    {
+      "id": "Q3",
+      "title": "Luís André Beckhauser · Vibe Writing (26.05.2026)",
+      "url": "https://vibewriting.org/",
+      "location": "Abschnitte «What is Vibe Writing?» und «The epistemic risk»",
+      "summary": "Beckhauser versteht KI als Denkstütze, mit der Schreibende Ideen artikulieren, verbinden und weiterentwickeln können. Er betont ihre Verantwortung für das Ergebnis und das Risiko von Behauptungen, deren Herkunft sie nicht vollständig nachvollziehen können. Der Text beschreibt eine Schreibpraxis und keine schulische Vergleichsstudie."
+    }
+  ]
+}
