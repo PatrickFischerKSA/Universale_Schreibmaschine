@@ -56,9 +56,13 @@ Unter «Sicherung & Betriebsart» die Bibliothek regelmässig als JSON herunterl
 «ChatGPT · ohne API-Schlüssel» ist die vorausgewählte Betriebsart. Erstelle einen Auftrag
 für Profil, Plot, Entwurf oder Überarbeitung und wähle «Auftrag kopieren & ChatGPT öffnen».
 Füge ihn im Chat ein und sende ihn ab. Kopiere die Antwort dort und wähle im selben
-Arbeitsschritt «ChatGPT-Antwort einfügen». Falls der Browser den Zugriff auf die
+Arbeitsschritt «ChatGPT-Antwort prüfen». Falls der Browser den Zugriff auf die
 Zwischenablage sperrt, kannst du den Auftrag und die Antwort von Hand kopieren und einfügen.
-Die Schreibmaschine legt die Antwort im zugehörigen Feld ab. Dein Browser öffnet ChatGPT
+Die lokale Vorschau meldet Schrittabweichungen, unbekannte Passage-IDs und erkennbare
+Zitatabweichungen. Mit «Geprüfte Antwort übernehmen» schreibst du ausschliesslich ins
+jeweilige Zielfeld. Die gesicherte Fassung A bleibt erhalten. Unter «Gezielter Zusatzauftrag»
+wählst du einen Schwerpunkt, aus dem die Schreibmaschine einen konkreten Zusatzauftrag
+formuliert. Bei Bedarf kannst du markierten Text aus dem Schreibfeld beifügen. Dein Browser öffnet ChatGPT
 in einem separaten Tab. Für den Chat gelten deine dortigen Kontoeinstellungen.
 
 ## Zwei Betriebsarten

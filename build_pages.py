@@ -9,10 +9,12 @@ html=html.replace('<h3>Bibliothek sichern','<p id="legacyAtelier" hidden><a href
 js=(root/'static/app.js').read_text().replace('async function api(path,data){','async function api(path,data){if(window.browserAPI)return window.browserAPI(path,data);').replace('Du kannst ihn kopieren oder im API-Modus senden.','Du kannst ihn jetzt kopieren und in ChatGPT verwenden.')
 (root/'docs/app.js').write_text(js);shutil.copy(root/'static/style.css',root/'docs/style.css');(root/'docs/.nojekyll').touch()
 
+shutil.copy(root/'static/reply-check.js',root/'docs/reply-check.js')
+
 # Content-addressed URLs prevent mixed releases in browser/CDN caches.
 import hashlib
 html=(root/'docs/index.html').read_text()
-for asset in ('app.js','browser-api.js','style.css'):
+for asset in ('app.js','browser-api.js','style.css','reply-check.js'):
     digest=hashlib.sha256((root/'docs'/asset).read_bytes()).hexdigest()[:12]
     html=html.replace('./'+asset,'./'+asset+'?v='+digest)
 html=html.replace('Schreibmaschine · Belegte Merkmale', 'Schreibmaschine · Geführte Werkstatt · Belegte Merkmale')

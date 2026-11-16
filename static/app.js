@@ -803,24 +803,17 @@ for (const [kind,[promptId,targetId]] of Object.entries(chatHandoffs)) {
     }).catch(showManualCopy);
   });
 
+  $('paste-'+kind).textContent = 'ChatGPT-Antwort prüfen';
   $('paste-'+kind).onclick = run(async () => {
     const authorId = requireAuthor();
+    const panel = replyPanels[kind];
+    panel.root.hidden = false;
     let reply;
-    try { reply = await navigator.clipboard.readText(); }
-    catch {
-      field.focus();
-      msg('Die Zwischenablage ist gesperrt. Füge die Antwort mit ⌘V oder Strg+V in das markierte Arbeitsfeld ein.');
-      return;
-    }
-    if (current?.id !== authorId) throw Error('Das Projekt wurde inzwischen gewechselt.');
-    if (!reply.trim()) throw Error('Kopiere zuerst die Antwort aus ChatGPT.');
-    if (reply.trim() === promptField.value.trim() || isCopiedPrompt(reply)) throw Error('In der Zwischenablage steht noch der Auftrag. Kopiere die Antwort aus ChatGPT.');
-    if (field.value.trim() && !confirm('Den Inhalt dieses Arbeitsfelds durch die kopierte Antwort ersetzen?')) return;
-    field.value = reply;
-    field.dispatchEvent(new Event('input',{bubbles:true}));
-    await flush();
-    field.focus();
-    msg('Antwort eingefügt. Prüfe sie im Arbeitsfeld.');
+    try { reply = await navigator.clipboard.readText(); } catch { /* Manual paste remains available. */ }
+    if (current?.id !== authorId) return;
+    if (reply?.trim() && !panel.input.value) panel.input.value = reply;
+    checkReply(kind);
+    panel.input.focus();
   });
 }
 const updateWithChat = updateJourney;
@@ -832,5 +825,178 @@ updateJourney = function() {
     $('handoff-'+kind).hidden = !chatMode;
     $('paste-'+kind).hidden = !chatMode;
   }
+};
+updateJourney();
+
+const chatFocus = {
+  analyse:[
+    ['Zitat und Deutung trennen','Trenne pro Beobachtung das wörtliche Zitat, deine Deutung und die daraus abgeleitete Schreibregel.'],
+    ['Erzählstimme vergleichen','Vergleiche Erzählperspektive und Distanz an zwei vorhandenen Passagen.']
+  ],
+  plot:[
+    ['Szenenfolge prüfen','Prüfe, ob die Entscheidung am Szenenende die nächste Szene auslöst. Nenne eine fehlende Ursache oder Folge.'],
+    ['Figurenmotiv schärfen','Zeige, welche Handlung aus dem Ziel der Figur folgt und an welcher Stelle das Motiv sichtbarer werden sollte.']
+  ],
+  write:[
+    ['Dialog und Subtext','Schreibe den Entwurf mit einem Dialog, in dem die Figuren Unterschiedliches wollen. Lass das Ungesagte durch Gesten und Pausen erkennbar werden.'],
+    ['Perspektive und Sinneseindruck','Bleibe bei der gewählten Perspektive. Entwickle die Szene über konkrete Wahrnehmungen und Handlungen.'],
+    ['These und Gegenposition','Entwickle eine präzise These, den stärksten Einwand und eine begründete Antwort darauf.']
+  ],
+  review:[
+    ['Dialog und Subtext prüfen','Kommentiere, was die Figuren sagen, wollen und verschweigen. Gib höchstens drei Hinweise.'],
+    ['Belege und Behauptungen prüfen','Markiere unbelegte oder zu weit reichende Behauptungen. Unterscheide Quellenbefund und Deutung.'],
+    ['Rhythmus und Perspektive prüfen','Zeige, wo Rhythmus oder Perspektive die beabsichtigte Wirkung unterstützen oder stören. Gib Hinweise zu einzelnen Stellen.']
+  ]
+};
+const replyPanels = {};
+const promptsForCheck = {};
+const checkUpdate = updateJourney;
+updateJourney = function () {
+  checkUpdate();
+  const id = current?.id;
+  for (const panel of Object.values(replyPanels)) {
+    if (panel.project === id) continue;
+    panel.project = id;
+    panel.input.value = '';
+    panel.root.hidden = true;
+    panel.checks.replaceChildren();
+    panel.focus.value = '';
+    panel.snippet.checked = false;
+    panel.apply.disabled = true;
+  }
+};
+
+function languageForStep(kind) {
+  return {analyse:'Profil',plot:'Plot',write:'Entwurf',review:'Überarbeitung'}[kind];
+}
+function buildChatPrompt(kind, base) {
+  const panel = replyPanels[kind];
+  if (!panel || $('mode').value !== 'copy') return base;
+  const draft = $('draft');
+  const selection = panel.snippet.checked ?
+    draft.value.slice(draft.selectionStart,draft.selectionEnd).trim().slice(0,5000) : '';
+  const focus = chatFocus[kind][Number(panel.focus.value)-1]?.[1];
+  const guidance = [
+    'SCHREIBMASCHINE · ANTWORTRAHMEN',
+    'Beginne mit einer eigenen Zeile: Schreibschritt: '+languageForStep(kind),
+    'Wenn du Material belegst: verwende nur die mitgelieferten IDs in eckigen Klammern. Schreibe ein direktes Zitat unmittelbar dahinter in Guillemets, etwa [ID] «wörtlicher Ausschnitt».',
+    kind === 'review' ? 'Gib ausschliesslich Rückmeldung. Schreibe weder Fassung A noch Fassung B neu.' : '',
+    focus ? 'GEZIELTER ZUSATZAUFTRAG DER SCHREIBMASCHINE\n'+focus : '',
+    selection ? 'MARKIERTE TEXTSTELLE ALS ARBEITSMATERIAL\n'+selection : '',
+    panel.snippet.checked && !selection && draft.value.trim() ?
+      'TEXT ZUM ZUSATZAUFTRAG ALS ARBEITSMATERIAL\n'+draft.value.trim().slice(0,5000) : ''
+  ].filter(Boolean).join('\n\n');
+  return base+'\n\n'+guidance;
+}
+
+function checkReply(kind) {
+  const panel = replyPanels[kind];
+  if (panel.project !== current?.id) return;
+  const request = promptsForCheck[kind];
+  const project = current;
+  const passages = project?.works.flatMap(work => {
+    const units = new Map(work.units.map(unit => [unit.location,unit.text]));
+    return work.passages.map(p => ({id:p.id,text:units.get(p.location) || p.text}));
+  }) || [];
+  const findings = workshopReplyCheck({
+    kind,text:panel.input.value,request:request?.project===project?.id ? request.text : '',
+    knownIds:passages.map(p=>p.id),
+    sentIds:request?.project===project?.id ? request.ids : [],passages,
+    hasA:Boolean($('draftA').value.trim())
+  });
+  if (panel.input.value.trim() && (!request || request.project!==project?.id || !request.text)) {
+    findings.unshift({level:'warning',message:'Zu dieser Antwort ist kein aktueller Auftrag hinterlegt. Die Übereinstimmung mit dem gesendeten Material ist offen.'});
+  }
+  panel.checks.replaceChildren(...findings.map(item=>node('li',
+    ({ok:'✓ ',warning:'Hinweis: ',block:'Übernahme gesperrt: '})[item.level]+item.message)));
+  panel.apply.disabled = findings.some(item=>item.level==='block');
+  return findings;
+}
+
+for (const [kind,[promptId,targetId]] of Object.entries(chatHandoffs)) {
+  const stage = $({analyse:'profileSection',plot:'plot',write:'writing',review:'learning'}[kind]);
+  const prepareButton = $({analyse:'analyse',plot:'preparePlot',write:'write',review:'review'}[kind]);
+  const options = node('details');
+  options.append(node('summary','Gezielter Zusatzauftrag'));
+  const focus = document.createElement('select');
+  focus.append(node('option','Standardauftrag'));
+  focus.firstChild.value = '';
+  chatFocus[kind].forEach(([label],i) => {
+    const choice = node('option',label);
+    choice.value = String(i+1);
+    focus.append(choice);
+  });
+  const focusLabel = node('label','Schwerpunkt wählen');
+  focusLabel.append(focus);
+  const snippetLabel = node('label');
+  const snippet = document.createElement('input');
+  snippet.type = 'checkbox';
+  snippetLabel.append(snippet,document.createTextNode(' Markierte Stelle aus dem Schreibfeld beifügen, sonst die ersten 5’000 Zeichen'));
+  options.append(focusLabel,snippetLabel,node('p','Erstelle den Auftrag nach einer Änderung neu. Die Schreibmaschine formuliert die Anweisung und zeigt sie in der Vorschau.','small'));
+  prepareButton.before(options);
+
+  const root = node('section',undefined,'exchange');
+  root.hidden = true;
+  const label = node('label','ChatGPT-Antwort zur lokalen Prüfung einfügen');
+  const input = document.createElement('textarea');
+  input.rows = 9;
+  label.append(input);
+  const checks = node('ul');
+  checks.setAttribute('aria-live','polite');
+  const apply = node('button','Geprüfte Antwort übernehmen');
+  apply.type = 'button';
+  apply.disabled = true;
+  const close = node('button','Prüfvorschau schliessen','secondary');
+  close.type = 'button';
+  close.onclick = () => { root.hidden = true; };
+  root.append(label,node('p','Die Prüfung erkennt sichtbare Merkmale. Sie bewertet keine Argumente und bestätigt keine Tatsachen.','small'),checks,apply,close);
+  const field = $(targetId);
+  const placement = kind === 'write' ? $('exchange-write') : $('paste-'+kind);
+  placement.after(root);
+  replyPanels[kind] = {root,input,checks,apply,focus,snippet,project:current?.id};
+  input.addEventListener('input',() => checkReply(kind));
+  field.addEventListener('paste',event => {
+    if ($('mode').value !== 'copy' || !current || promptsForCheck[kind]?.project !== current.id) return;
+    const text = event.clipboardData?.getData('text/plain');
+    if (!text?.trim()) return;
+    event.preventDefault();
+    root.hidden = false;
+    input.value = text;
+    checkReply(kind);
+    input.focus();
+  });
+  apply.onclick = run(async () => {
+    if (!checkReply(kind) || apply.disabled) return;
+    if (field.value.trim() && !confirm('Den Inhalt dieses Arbeitsfelds durch die geprüfte Antwort ersetzen?')) return;
+    const reply = input.value.replace(/^\s*(?:#+\s*)?Schreibschritt:\s*(?:Profil|Plot|Entwurf|Überarbeitung)[ \t]*\r?\n/i,'').trim();
+    if (!reply) throw Error('Die Antwort enthält nur die Überschrift des Schreibschritts.');
+    field.value = reply;
+    root.hidden = true;
+    input.value = '';
+    field.dispatchEvent(new Event('input',{bubbles:true}));
+    await flush();
+    field.focus();
+    msg('Antwort übernommen.');
+  });
+}
+
+const prepareWithFocus = prepare;
+prepare = async function (kind) {
+  await prepareWithFocus(kind);
+  const result = stagePrompts[kind];
+  const field = $('prompt-'+kind);
+  if (!result || !field.value || result.author_id !== current?.id) return;
+  field.value = buildChatPrompt(kind,result.text);
+  promptsForCheck[kind] = {project:current.id,text:field.value,ids:result.passage_ids || []};
+};
+
+const previousPlotPrepare = $('preparePlot').onclick;
+$('preparePlot').onclick = async event => {
+  $('plotPrompt').value = '';
+  await previousPlotPrepare(event);
+  const field = $('plotPrompt');
+  if (!field.value || !current) return;
+  field.value = buildChatPrompt('plot',field.value);
+  promptsForCheck.plot = {project:current.id,text:field.value,ids:[]};
 };
 updateJourney();
