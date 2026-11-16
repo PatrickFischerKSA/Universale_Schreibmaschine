@@ -24,6 +24,12 @@ Repository herunterladen und entpacken. Auf dem Mac `Starten.command` doppelklic
 
 Modus, Arbeitsstand, Quellen und Regeln werden im jeweiligen Projekt gespeichert.
 
+Das integrierte Fanfiction-Beispiel **Gabriele Reuter** öffnet einen vollständigen,
+lokal bearbeitbaren Arbeitsstand zu *Aus guter Familie*. Es enthält den TextGrid-Volltext,
+ein mit Passagen verknüpftes Stilprofil, vier Feedbackregeln und den alternativen
+Ballplot «Der abgesagte Tanz». Erneutes Öffnen erhält die vorhandene Arbeit.
+[Textquelle und Lizenz](docs/examples/REUTER-QUELLE.md).
+
 ## Arbeitsablauf
 
 Die Oberfläche zeigt jeweils einen Schritt. Links kannst du jederzeit wechseln.
