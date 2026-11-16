@@ -6,7 +6,7 @@ Eine lokale Autorenbibliothek und Schreibwerkstatt, abgeleitet aus der Spyri200-
 
 [Schreibmaschine öffnen](https://patrickfischerksa.github.io/Universale_Schreibmaschine/)
 
-Die Onlinefassung in `docs/` läuft ohne Python und ohne Server. Sie importiert TXT, Markdown, EPUB und PDF mit Textebene direkt im Browser, speichert die Autorenbibliothek in IndexedDB und erzeugt kopierbare Prompts. Volltexte werden dabei nicht hochgeladen. Browserdaten sind geräte- und browserspezifisch; sichere regelmässig die JSON-Bibliothek. Die direkte API-Anbindung bleibt der lokalen Fassung vorbehalten.
+Die Onlinefassung in `docs/` läuft ohne Python und ohne Server. Sie importiert TXT, Markdown, EPUB und PDF mit Textebene direkt im Browser, speichert die Autorenbibliothek in IndexedDB und erzeugt kopierbare Prompts. Volltexte werden dabei nicht hochgeladen. Browserdaten sind geräte- und browserspezifisch; sichere regelmässig die JSON-Bibliothek. Die Onlinefassung kann optional einen HTTPS-Schreibdienst verbinden.
 
 ## Lokale Fassung mit optionaler API
 
@@ -23,7 +23,7 @@ Die Oberfläche zeigt jeweils einen Schritt. Links kannst du jederzeit wechseln.
 
 Aufträge, Profilanalysen und Geschichten haben getrennte Felder. Kopierte Aufträge werden beim Speichern abgefangen; erkennbare Analysen im Geschichtenfeld erhalten einen Hinweis und können ausdrücklich ins Profil kopiert werden. Die Erkennung ist heuristisch. Bestehende Daten bleiben erhalten. Alte Antworten sind unter «Sicherung & Betriebsart» erreichbar; alte Fassungen bleiben in der jeweiligen Versionsgeschichte.
 
-Unter «Sicherung & Betriebsart» die Bibliothek regelmässig als JSON herunterladen. Auf GitHub Pages erfolgt die KI-Arbeit durch den manuellen Wechsel zu ChatGPT. Die lokale Fassung bietet zusätzlich den API-Modus; dafür erscheinen im jeweiligen Schritt passende Schaltflächen.
+Unter «Sicherung & Betriebsart» die Bibliothek regelmässig als JSON herunterladen. Auf GitHub Pages kannst du Prompts kopieren oder einen HTTPS-Schreibdienst verbinden. Die lokale Fassung bietet zusätzlich den API-Modus; dafür erscheinen im jeweiligen Schritt passende Schaltflächen.
 
 ## Zwei Betriebsarten
 
@@ -74,19 +74,21 @@ Bei der Überarbeitung stehen Rückmeldung und derselbe Geschichteneditor nebene
 
 Die GitHub-Pages-Website bleibt die serverlose Kopierfassung. Der lokale API-Server hält den Schlüssel aus dem öffentlichen Projekt heraus. Vorhandene Bibliotheken können per JSON-Export/-Import übernommen werden. Der Schlüssel gilt nur für die laufende Seite und wird nicht exportiert. Ohne eigenen API-Zugang kann keine echte Generierung geprüft werden.
 
-## Schreibatelier: Erstfassung, Rückmeldung und Überarbeitung
+## Fassung A und Fassung B
 
-[Schreibatelier auf GitHub Pages öffnen](https://patrickfischerksa.github.io/Universale_Schreibmaschine/atelier.html).
-Das Atelier ist eine Ergänzung zur Autorenbibliothek. Es orientiert sich an der Zweiteilung
-des Uetiker Modells, ist aber keine Prüfungsumgebung. Fassung A wird als Vergleich
-gesichert; danach stehen gezielte Feedbackaufträge, Fassung B und die Reflexion bereit.
-Der Browser speichert ein Projekt lokal. Der Markdown-Export umfasst beide Fassungen,
-Rückmeldung und Reflexion, einschliesslich früherer im Atelier archivierter Fassungen.
+Wähle die Autorenbibliothek, schreibe oder importiere deinen Entwurf im Schreibfeld und
+sichere ihn als Fassung A. In «Überarbeiten» bleibt A zum Vergleich verfügbar, während
+du im Schreibfeld an B arbeitest. Dort kannst du Belege aus dem aktiven Korpus auswählen.
+Der Überarbeitungsauftrag enthält beide Fassungen, den gewählten Schwerpunkt, das letzte
+gespeicherte Autorenprofil, die aktiven Feedbackregeln und die Textbelege mit Fundstellen.
+Das Markdown-Protokoll enthält die Fassungen, Rückmeldung und eigene Entscheidungen.
+Ein vorhandenes Projekt aus dem früheren Atelier lässt sich weiterhin über den Link
+unter «Sicherung & Betriebsart» exportieren.
 
-### API-Vertrag für das Atelier
+### API-Vertrag für GitHub Pages
 
 GitHub Pages liefert die Oberfläche aus. Für direkte Rückmeldungen betreibst du einen
-separaten HTTPS-Dienst. Trage seine URL im Atelier ein. Der Kopiermodus bleibt ohne Dienst nutzbar.
+separaten HTTPS-Dienst. Trage seine URL unter «Sicherung & Betriebsart» ein und sende den sichtbaren Auftrag aus dem jeweiligen Schritt. Der Kopiermodus bleibt ohne Dienst nutzbar.
 
 - Anfrage: `POST` mit `Content-Type: application/json` und Body `{"prompt":"…"}`.
 - Erfolg: HTTP 200 mit JSON `{"text":"…"}`; Fehler: passender HTTP-Status.

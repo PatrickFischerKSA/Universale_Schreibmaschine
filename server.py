@@ -46,7 +46,11 @@ def make_prompt(a,kind,data):
         task='''Analysiere die ausgewählten Passagen vergleichend: Syntax und Rhythmus, Perspektive und Erzähldistanz, Wahrnehmung und innere Bewegung, Wortfelder und Bildlichkeit, Dialog und Handlungsführung. Trenne Beobachtung, Deutung und mögliche Schreibregel. Belege jede wesentliche Beobachtung mit einer vorhandenen Passage-ID und einem kurzen wörtlichen Textbeleg. Markiere Unterschiede zwischen Werken und Unsicherheiten. Gib keine Behauptung als Merkmal des gesamten Autors aus, die nur an einem Ausschnitt erkennbar ist. Schlage überprüfbare positive und negative Gestaltungsregeln vor. Keine erfundenen Belege.'''
     elif kind=='review':
         if not data.get('draft','').strip():raise ValueError('Für die Rückmeldung fehlt ein Entwurf.')
-        task='Prüfe den Entwurf auf nachvollziehbare Handlung, Figurenmotive, Atmosphäre und die vereinbarten Merkmale. Nenne höchstens fünf konkrete Stellen mit Verbesserungsvorschlägen. Bewahre gelungene Formulierungen. Keine vollständige Neufassung. Prüfe mögliche Übernahmen aus den bereitgestellten Originalpassagen.\nENTWURF:\n'+data['draft'][:50000]
+        task='Prüfe den Entwurf auf nachvollziehbare Handlung, Figurenmotive, Atmosphäre und die vereinbarten Merkmale. Nenne höchstens fünf konkrete Stellen mit Verbesserungsvorschlägen. Bewahre gelungene Formulierungen. Keine vollständige Neufassung. Prüfe mögliche Übernahmen aus den bereitgestellten Originalpassagen.\nENTWURF:\n'+json.dumps({
+            'schwerpunkt':data.get('focus','Aufbau und Figuren'),'auftrag':query,
+            'kontext':str(data.get('context',''))[:4000],
+            'fassung_a':str(data.get('draft_a',''))[:22000],'arbeitsfassung':data['draft'][:42000],
+        },ensure_ascii=False)+'\nBeziehe Profil, aktive Regeln und Textbelege ein. Verweise auf Passage-IDs. Vergleiche die Wirkung beider Fassungen, wenn beide vorliegen.'
     else:
         if not query:raise ValueError('Beschreibe zuerst deinen Schreibauftrag.')
         task=f"Schreibe einen eigenständigen literarischen Text. Auftrag: {query}\nTextform: {data.get('genre','Prosa')}\nZielumfang: {max(50,min(5000,int(data.get('length',800))))} Wörter.\nNutze die ausgewählten, belegten Gestaltungsmerkmale als Orientierung. Keine Sätze aus den Originaltexten kopieren. Figuren, Handlung und Details folgen dem Auftrag. Plausibilität und erzählerische Wirkung haben Vorrang vor oberflächlicher Nachahmung. Schweizer Rechtschreibung mit ss und Guillemets. Kennzeichne den Text nicht als Originalwerk des Autors. Gib anschliessend eine kurze Selbstprüfung aus."
@@ -170,7 +174,7 @@ class Handler(BaseHTTPRequestHandler):
                     if not text:raise ValueError('Entwurf ist leer.')
                     a['drafts'].append({'id':uid(),'date':now(),'text':text,'prompt':str(data.get('prompt','')),'profile_version':len(a['profiles'])})
                 elif path=='/api/workspace':
-                    a['workspace']={k:str(v) for k,v in data.get('workspace',{}).items() if k in ['task','genre','length','profile','draft','prompt','before','after','reason','rule','response','reviewResponse']}
+                    a['workspace']={k:str(v) for k,v in data.get('workspace',{}).items() if k in ['task','genre','length','profile','draft','prompt','before','after','reason','rule','response','reviewResponse','draftA','storyContext','reflection','reviewFocus','abSourceIds']}
                 else:return self.send(404,{'error':'Nicht gefunden.'})
                 save(db);return self.send(200,public(a))
         except (ValueError,KeyError,TypeError,zipfile.BadZipFile) as e:self.send(400,{'error':str(e)})
