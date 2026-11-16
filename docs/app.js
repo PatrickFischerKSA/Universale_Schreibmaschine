@@ -971,7 +971,7 @@ for (const [kind,[promptId,targetId]] of Object.entries(chatHandoffs)) {
   apply.onclick = run(async () => {
     if (!checkReply(kind) || apply.disabled) return;
     if (field.value.trim() && !confirm('Den Inhalt dieses Arbeitsfelds durch die geprüfte Antwort ersetzen?')) return;
-    const reply = input.value.replace(/^\s*(?:#+\s*)?Schreibschritt:\s*(?:Profil|Plot|Entwurf|Überarbeitung)[ \t]*\r?\n/i,'').trim();
+    const reply = replyContent(input.value);
     if (!reply) throw Error('Die Antwort enthält nur die Überschrift des Schreibschritts.');
     field.value = reply;
     root.hidden = true;
@@ -1004,6 +1004,10 @@ $('preparePlot').onclick = async event => {
 };
 updateJourney();
 
+function replyContent(text) {
+  return text.replace(/^\s*(?:#+\s*)?Schreibschritt:\s*(?:Profil|Plot|Entwurf|Überarbeitung)[ \t]*\r?\n/i,'').trim();
+}
+
 function renderReplyFindings(findings) {
   const labels = {ok:'✓ ',warning:'Hinweis: ',block:'Übernahme gesperrt: '};
   return findings.map(item => node('li',labels[item.level]+item.message));
@@ -1025,6 +1029,10 @@ function reuterCheckDemo(snapshot) {
     sourceIds:['reuter-001','reuter-056','reuter-061'],
     task:'Kommentiere Lenes Frage in der Garderobenszene.',
     form:'Figurennahe Szene im psychologischen Gesellschaftsroman',
+    correct:[
+      'Rückmeldung: Lenes «Soll ich» bietet Agathe eine Entscheidung an. Lene spricht die Absage noch nicht aus. Lass diese Frage allein stehen und behalte Agathes anschliessendes «Wegschicken?». Die Wiederholung zeigt, wie Agathe die Möglichkeit zum ersten Mal erwägt.',
+      'Originalbeleg für den Druck im Saal: [reuter-061] «fest und fester an sich preßte». Der Griff macht dort das Unbehagen körperlich spürbar. In deiner Szene leistet das Streichen über den Kartenrand etwas Ähnliches. Lass die Geste vor Agathes Antwort stehen, ohne sie durch eine zusätzliche Erklärung auszudeuten.'
+    ],
     example:[
       'Vorschlag: Lenes Frage zeigt, dass sie bereits über Agathes Kopf hinweg entschieden hat. Das steht in [reuter-999].',
       'Als Beleg: [reuter-061] «Lene strich das blaue Tuch glatt.»',
@@ -1041,6 +1049,10 @@ function freeCheckDemo(snapshot,sources) {
     description:'Die Schreibmaschine fragt, was der Uetiker Erfahrungsbericht über frühe KI-Hilfe belegt.',
     sourceIds:sources.map(source => source.id),
     task:'Prüfe im markierten Absatz, welche Aussage der Uetiker Erfahrungsbericht trägt. Trenne Beobachtung, Vergleich und eigene Schlussfolgerung.',
+    correct:[
+      'Rückmeldung: Behalte die Einschränkung am Ende des Absatzes. [Q1] beschreibt, wann die Klasse KI einsetzen durfte. Der Erfahrungsbericht [Q2] beschreibt Überarbeitungen in dieser konkreten Durchführung. Daraus folgt kein Vergleich mit einem frühen KI-Einsatz.',
+      'Die hinterlegte Quellenkarte hält fest: [Q2] «Der Beitrag reflektiert eine konkrete Durchführung.» Das ist die Paraphrase auf der Quellenkarte. Markiere in deinem nächsten Absatz den Übergang zum eigenen Vorschlag ausdrücklich. So ist klar, dass die frühe KI-Gegenfrage deine Ableitung ist.'
+    ],
     example:[
       'Vorschlag: Streich die Einschränkung. [Q99] ist eine Vergleichsstudie und beweist, dass frühe KI-Hilfe immer schadet.',
       'Als wörtlicher Beleg: [Q2] «Frühe KI-Hilfe verschlechterte jeden Aufsatz.»',
@@ -1059,7 +1071,7 @@ function buildCheckDemo(snapshot,config) {
   const output = node('div');
   output.setAttribute('aria-live','polite');
   box.append(node('h3','Prüfdemo · '+focusLabel),
-    node('p',config.description+' Danach prüft sie eine vorbereitete fehlerhafte Antwort.'),
+    node('p',config.description+' Danach vergleicht sie eine fehlerhafte und eine passende Antwort.'),
     trigger,output);
 
   trigger.onclick = run(async () => {
@@ -1075,12 +1087,17 @@ function buildCheckDemo(snapshot,config) {
     });
     if (current?.id !== authorId) return;
     const prompt = composeChatPrompt('review',result.text,focus,selected);
-    const example = ['Schreibschritt: Überarbeitung',...config.example].join('\n\n');
     const passages = current.works.flatMap(work => work.passages);
-    const findings = workshopReplyCheck({
-      kind:'review',text:example,request:prompt,knownIds:passages.map(p=>p.id),
-      sentIds:result.passage_ids,passages,hasA:Boolean(snapshot.draftA)
-    });
+    const checkExample = lines => {
+      const text = ['Schreibschritt: Überarbeitung',...lines].join('\n\n');
+      const findings = workshopReplyCheck({
+        kind:'review',text,request:prompt,knownIds:passages.map(p=>p.id),
+        sentIds:result.passage_ids,passages,hasA:Boolean(snapshot.draftA)
+      });
+      return {text,findings};
+    };
+    const faulty = checkExample(config.example);
+    const correct = checkExample(config.correct);
     const promptDetails = node('details');
     const promptField = document.createElement('textarea');
     promptField.readOnly = true;
@@ -1088,13 +1105,47 @@ function buildCheckDemo(snapshot,config) {
     promptField.value = prompt;
     promptField.setAttribute('aria-label','Vollständiger erzeugter Auftrag');
     promptDetails.append(node('summary','Vollständigen erzeugten Auftrag lesen'),promptField);
-    const findingsList = node('ul');
-    findingsList.append(...renderReplyFindings(findings));
+    const preview = (title,example) => {
+      const card = node('section');
+      const findings = node('ul');
+      findings.append(...renderReplyFindings(example.findings));
+      card.append(node('h4',title),node('pre',example.text,'passage'),
+        node('h4','Lokale Prüfung'),findings);
+      return card;
+    };
+    const badCard = preview('Fehlerhafte Beispielantwort',faulty);
+    const goodCard = preview('Korrekte Beispielantwort',correct);
+    const demoFields = {draftA:snapshot.draftA,draft:snapshot.draft,reviewResponse:''};
+    const apply = node('button','Als Demo-Rückmeldung übernehmen');
+    apply.type = 'button';
+    apply.disabled = correct.findings.some(item => item.level !== 'ok');
+    const status = node('p',apply.disabled ?
+      'Die Antwort enthält einen Prüfhinweis. Prüfe zuerst die Meldungen.' :
+      'Keine Auffälligkeit erkannt. Die Antwort ist zur Übernahme als Rückmeldung freigegeben.');
+    status.setAttribute('role','status');
+    const feedbackLabel = node('label','Demo-Rückmeldungsfeld');
+    const feedbackField = document.createElement('textarea');
+    feedbackField.readOnly = true;
+    feedbackField.rows = 6;
+    feedbackField.placeholder = 'Noch keine Antwort übernommen';
+    feedbackLabel.append(feedbackField);
+    apply.onclick = () => {
+      demoFields.reviewResponse = replyContent(correct.text);
+      feedbackField.value = demoFields.reviewResponse;
+      const protectedA = demoFields.draftA === snapshot.draftA;
+      const protectedB = demoFields.draft === snapshot.draft;
+      status.textContent = protectedA && protectedB ?
+        'Rückmeldung übernommen. Fassung A und Fassung B sind unverändert.' :
+        'Der Textstand hat sich verändert. Prüfe die Fassungen.';
+      apply.disabled = true;
+    };
+    goodCard.append(status,apply,feedbackLabel);
+    const comparison = node('div',undefined,'revision-grid');
+    comparison.append(badCard,goodCard);
     output.replaceChildren(
       node('h4','Zusatzauftrag · '+focusLabel),node('p',focus),node('blockquote',selected),
-      promptDetails,node('h4','Vorbereitete Beispielantwort'),node('pre',example,'passage'),
-      node('h4','Ergebnis der lokalen Prüfung'),findingsList,
-      node('p','Die Demo sendet keine Anfrage an ChatGPT und übernimmt keine Antwort in den Arbeitsstand.')
+      promptDetails,comparison,
+      node('p','Die Demo läuft im Browser. Die Übernahme füllt nur das Demo-Rückmeldungsfeld.')
     );
   });
   return box;
