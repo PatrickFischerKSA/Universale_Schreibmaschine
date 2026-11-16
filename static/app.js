@@ -601,6 +601,73 @@ $('openReuter').onclick = run(async () => {
   await flush();
   const result = await api('example-reuter');
   await refresh(result.id);
-  showStage('plot');
-  msg('Reuter-Beispiel geöffnet. «Die Garderobe» ist als Schreibszene ausgewählt.');
+  showStage('learning');
+  $('reuterComparison').open = true;
+  await showReuterComparison();
+  msg('Reuter-Beispiel geöffnet. Die Garderobenszene steht im A/B-Vergleich bereit.');
 });
+
+
+let reuterComparisonRequest;
+function isReuterExample() {
+  return current?.id === 'example-reuter-aus-guter-familie-v1';
+}
+const updateWithReuter = updateJourney;
+updateJourney = function() {
+  updateWithReuter();
+  $('reuterComparison').hidden = !isReuterExample();
+  if (!isReuterExample()) $('reuterComparison').open = false;
+};
+async function showReuterComparison() {
+  if (!isReuterExample()) return;
+  const body = $('reuterComparisonBody');
+  if (body.dataset.loaded) return;
+  body.textContent = 'A/B-Vergleich wird geladen …';
+  reuterComparisonRequest ||= fetch('./examples/reuter-garderobe.json').then(response => {
+    if (!response.ok) throw Error('Der A/B-Vergleich konnte nicht geladen werden.');
+    return response.json();
+  }).catch(error => {
+    reuterComparisonRequest = null;
+    throw error;
+  });
+  try {
+    const {snapshot,annotations} = await reuterComparisonRequest;
+    const grid = node('div',undefined,'revision-grid');
+    for (const [title,text] of [['Fassung A · Erstentwurf',snapshot.draftA],['Fassung B · Überarbeitung',snapshot.draft]]) {
+      const column = node('div');
+      column.append(node('h3',title));
+      for (const paragraph of text.split('\n\n')) column.append(node('p',paragraph));
+      grid.append(column);
+    }
+    const changes = node('div');
+    const passages = new Map(current?.works.flatMap(work => work.passages.map(p => [p.id,p])) || []);
+    changes.append(node('h3','Vier Entscheidungen bei der Überarbeitung'));
+    for (const item of annotations) {
+      const card = node('details');
+      card.append(node('summary',item.title));
+      for (const [label,text] of [
+        ['Fassung A','«'+item.before+'»'],['Fassung B','«'+item.after+'»'],
+        ['Reuter · '+item.id+' · '+item.location,'«'+item.quote+'»'],
+        ['Feedbackregel',item.rule],['Wirkung',item.effect]
+      ]) {
+        const p = node('p');
+        p.append(node('strong',label+' · '),document.createTextNode(text));
+        card.append(p);
+      }
+      const passage = passages.get(item.id);
+      if (passage) {
+        const source = node('details');
+        source.append(node('summary','Originalpassage im Zusammenhang lesen'),node('div',passage.text,'passage'));
+        card.append(source);
+      }
+      changes.append(card);
+    }
+    changes.append(node('p',snapshot.reflection));
+    body.replaceChildren(grid,changes);
+    body.dataset.loaded = 'true';
+  } catch (error) { body.textContent = error.message; }
+}
+$('reuterComparison').addEventListener('toggle',() => {
+  if ($('reuterComparison').open) void showReuterComparison();
+});
+updateJourney();

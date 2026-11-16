@@ -1,0 +1,50 @@
+{
+  "snapshot": {
+    "draftA": "Agathe war froh, in der Garderobe ein wenig Ruhe zu finden. Im Saal hatte sie sich seit einer Weile unbehaglich gefühlt, besonders wenn einer der Herren ihr beim Tanzen zu nahe kam. Dennoch wusste sie, dass ihre Mutter von ihr erwartete, jede Aufforderung freundlich anzunehmen. Sie wollte nicht undankbar erscheinen.\n\nDie junge Gehilfin hinter dem Tisch fragte, ob sie ihren Mantel wünsche. Agathe sagte, sie wolle noch nicht heim. Sie legte ihre Tanzkarte auf den Tisch und setzte sich auf die Bank. Von dort konnte sie die Tür sehen, durch die sie gekommen war. Sie hoffte, man werde sie eine Weile vergessen.\n\nEin Hausdiener kam herein und richtete aus, Frau Heidlich lasse bitten, Agathe möge wieder in den Saal kommen. Der Herr für die nächste Tour warte schon. Agathe bat ihn, ihrer Mutter zu sagen, sie komme gleich. Kaum war er fort, bedauerte sie diese Antwort. Sie hatte sich damit aufs neue zu etwas verpflichtet, das sie nicht wollte.\n\nLene rückte einen Mantel zurecht und fragte, ob sie den Herrn wegschicken solle. Agathe dachte daran, dass ihre Mutter sich wahrscheinlich für sie entschuldigen und sagen würde, sie fühle sich nicht wohl. Es wäre leicht gewesen, es dabei zu belassen. Aber sie wollte nicht, dass eine andere für sie entschied. Der Herr hatte ihr nichts getan und konnte nicht wissen, warum sie fortgegangen war.\n\nAgathe nahm die Karte wieder an sich. Sie sagte Lene, sie möge den Herrn zu ihr bitten. Bei dem Gedanken, ihm selbst erklären zu müssen, dass sie nicht tanzen werde, wurde ihr bange. Trotzdem blieb sie sitzen und wartete.",
+    "draft": "Die Tür fiel hinter Agathe zu. Die Geigen waren noch zu hören; nur der Takt, nach dem man sich eben noch hatte richten müssen, kam nicht mehr ordentlich durch. Sie zog den Handschuh am Zeigefinger glatt. Die Ecke der Tanzkarte hatte einen kleinen weissen Strich in das Leder gedrückt.\n\n»Den Mantel, Fräulein?«\n\nDas Mädchen hinter dem Tisch hielt schon die Hand nach der Marke hin. Agathe hatte sie gar nicht hervorgesucht.\n\n»Nein, ich gehe noch nicht.«\n\nSie setzte sich auf die schmale Bank. Über ihrem Kopf hing ein nasser Herrenüberrock, dessen Ärmel ihr bei jeder Bewegung an die Schulter stiess. Hier roch es nach Wolle. Noch vorhin hatte sie im Saal, sobald ein Tänzer sich zu ihr beugte, den Kopf ein wenig zurückgenommen. Er hatte es für ein Lächeln halten können.\n\nDie Tür ging auf. Der Hausdiener blieb auf der Schwelle stehen. Frau Heidlich lasse das Fräulein bitten; der Herr für die nächste Tour habe sich schon zweimal nach ihr erkundigt.\n\n»Sagen Sie Mama, ich komme gleich.«\n\nWie leicht das ging! Er hatte sich schon verbeugt, ehe sie den letzten Ton ihrer eigenen Stimme recht gehört hatte. Gleich. Sie brauchte nur aufzustehen, die Karte wieder ans Handgelenk zu hängen und in den Saal zu gehen. Mama würde an ihrem Gesicht sehen, dass etwas nicht stimmte, und ihr beim Vorübergehen den Rock glattstreichen.\n\nDas Mädchen war hinter dem Tisch hervorgekommen. Es hiess Lene; eine Dame hatte es vorhin so gerufen. Sie nahm den Überrock vom Haken und hängte ihn ein Stück weiter.\n\n»Soll ich den Herrn wegschicken, Fräulein?«\n\nAgathe sah auf. Wegschicken? Er hatte sie ordentlich gefragt, und sie hatte ihm die Tour zugesagt. Sollte er nun von einem Mädchen an der Garderobe erfahren, dass er sich eine andere Tänzerin suchen müsse? Mama würde sagen, Agathe sei plötzlich unwohl geworden. Man würde ihr ein Glas bringen; womöglich stünde der Herr daneben und erkundigte sich, ob es schon besser gehe.\n\nIm Saal klopfte jemand mit dem Bogen gegen ein Pult. Agathe legte die Karte flach auf ihr Knie. Der Name stand noch da, in einer Schrift, die sich auf dem kleinen Rechteck kaum hatte unterbringen lassen. Sie strich mit dem Daumen über den Rand, bis er nicht mehr am Handschuh hakte.\n\n»Nein, Lene. Bitten Sie den Herrn, zu mir zu kommen.«\n\nLene griff nach der Klinke. Agathe hätte sie noch zurückrufen können, solange sie da mit der Hand an der Tür stand. Da öffnete Lene, und für einen Augenblick war die ganze Musik wieder da.",
+    "reviewResponse": "Den Druck am Körper hörbar machen [reuter-001 · TextGrid-Blöcke 1–18]\nA: «Agathe war froh, in der Garderobe ein wenig Ruhe zu finden.»\nB: «nur der Takt, nach dem man sich eben noch hatte richten müssen, kam nicht mehr ordentlich durch»\nOriginal: «Rauschen ihres eigenen seidenen Kleides»\nFeedbackregel: Lass einen kleinen Sinneseindruck eine gesellschaftlich erwartete Haltung unterbrechen.\nWirkung: A benennt die Erleichterung. B lässt Agathe den Saal durch die Tür hören. Der Takt verbindet das Geräusch mit dem Zwang, dem sie sich gerade entzogen hat.\n\nDie erwartete Rolle in einer Geste zeigen [reuter-056 · TextGrid-Blöcke 991–1008]\nA: «Sie wollte nicht undankbar erscheinen.»\nB: «ihr beim Vorübergehen den Rock glattstreichen»\nOriginal: «wie auf einer Drehscheibe»\nFeedbackregel: Zeige gesellschaftlichen Druck über eine räumliche Anordnung oder ein häusliches Ding.\nWirkung: B gibt der Mutter eine kleine fürsorgliche Geste, in der zugleich der gesellschaftliche Blick spürbar ist. Die Mutter braucht weder einen Vorwurf noch eine Erklärung.\n\nAgathes Denken unterbrechen lassen [reuter-001 · TextGrid-Blöcke 1–18]\nA: «Kaum war er fort, bedauerte sie diese Antwort.»\nB: «Wie leicht das ging!»\nOriginal: «Nicht in dieser Stunde?»\nFeedbackregel: Wechsle nach einem längeren Wahrnehmungssatz in kurze figurennahe Fragen.\nWirkung: In B folgt auf die gewohnheitsmässige Zusage ein kurzer Ausruf aus Agathes Wahrnehmung. Das einzelne «Gleich» hält die Zusage im Bewusstsein, während der Diener schon fort ist.\n\nUnbehagen über eine Folge von Wahrnehmungen steigern [reuter-061 · TextGrid-Blöcke 1081–1098]\nA: «besonders wenn einer der Herren ihr beim Tanzen zu nahe kam»\nB: «Er hatte es für ein Lächeln halten können.»\nOriginal: «Der starke Geruch der Pomade»\nFeedbackregel: Lass eine Reihung konkreter Gesten das Unbehagen steigern.\nWirkung: B verteilt die Reibung auf Handschuh, Mantelärmel, Geruch und die Bewegung des Kopfes. Dass der Tänzer das Zurückweichen als Lächeln lesen konnte, macht die soziale Verkennung sichtbar.",
+    "reflection": "Die Handlung bleibt in beiden Fassungen gleich. B verschiebt die Erklärung in Wahrnehmung, Gesten und figurennahe Rede. Agathe bittet darum, den Herrn hereinzuschicken. Die Absage bleibt der nächsten Szene vorbehalten."
+  },
+  "annotations": [
+    {
+      "title": "Den Druck am Körper hörbar machen",
+      "before": "Agathe war froh, in der Garderobe ein wenig Ruhe zu finden.",
+      "after": "nur der Takt, nach dem man sich eben noch hatte richten müssen, kam nicht mehr ordentlich durch",
+      "quote": "Rauschen ihres eigenen seidenen Kleides",
+      "id": "reuter-001",
+      "rule": "Lass einen kleinen Sinneseindruck eine gesellschaftlich erwartete Haltung unterbrechen.",
+      "effect": "A benennt die Erleichterung. B lässt Agathe den Saal durch die Tür hören. Der Takt verbindet das Geräusch mit dem Zwang, dem sie sich gerade entzogen hat.",
+      "location": "TextGrid-Blöcke 1–18"
+    },
+    {
+      "title": "Die erwartete Rolle in einer Geste zeigen",
+      "before": "Sie wollte nicht undankbar erscheinen.",
+      "after": "ihr beim Vorübergehen den Rock glattstreichen",
+      "quote": "wie auf einer Drehscheibe",
+      "id": "reuter-056",
+      "rule": "Zeige gesellschaftlichen Druck über eine räumliche Anordnung oder ein häusliches Ding.",
+      "effect": "B gibt der Mutter eine kleine fürsorgliche Geste, in der zugleich der gesellschaftliche Blick spürbar ist. Die Mutter braucht weder einen Vorwurf noch eine Erklärung.",
+      "location": "TextGrid-Blöcke 991–1008"
+    },
+    {
+      "title": "Agathes Denken unterbrechen lassen",
+      "before": "Kaum war er fort, bedauerte sie diese Antwort.",
+      "after": "Wie leicht das ging!",
+      "quote": "Nicht in dieser Stunde?",
+      "id": "reuter-001",
+      "rule": "Wechsle nach einem längeren Wahrnehmungssatz in kurze figurennahe Fragen.",
+      "effect": "In B folgt auf die gewohnheitsmässige Zusage ein kurzer Ausruf aus Agathes Wahrnehmung. Das einzelne «Gleich» hält die Zusage im Bewusstsein, während der Diener schon fort ist.",
+      "location": "TextGrid-Blöcke 1–18"
+    },
+    {
+      "title": "Unbehagen über eine Folge von Wahrnehmungen steigern",
+      "before": "besonders wenn einer der Herren ihr beim Tanzen zu nahe kam",
+      "after": "Er hatte es für ein Lächeln halten können.",
+      "quote": "Der starke Geruch der Pomade",
+      "id": "reuter-061",
+      "rule": "Lass eine Reihung konkreter Gesten das Unbehagen steigern.",
+      "effect": "B verteilt die Reibung auf Handschuh, Mantelärmel, Geruch und die Bewegung des Kopfes. Dass der Tänzer das Zurückweichen als Lächeln lesen konnte, macht die soziale Verkennung sichtbar.",
+      "location": "TextGrid-Blöcke 1081–1098"
+    }
+  ]
+}
