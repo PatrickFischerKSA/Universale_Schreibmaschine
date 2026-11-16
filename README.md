@@ -51,6 +51,16 @@ Aufträge, Profilanalysen und Geschichten haben getrennte Felder. Kopierte Auftr
 
 Unter «Sicherung & Betriebsart» die Bibliothek regelmässig als JSON herunterladen. Auf GitHub Pages kannst du Prompts kopieren oder einen HTTPS-Schreibdienst verbinden. Die lokale Fassung bietet zusätzlich den API-Modus; dafür erscheinen im jeweiligen Schritt passende Schaltflächen.
 
+## ChatGPT ohne API-Schlüssel
+
+«ChatGPT · ohne API-Schlüssel» ist die vorausgewählte Betriebsart. Erstelle einen Auftrag
+für Profil, Plot, Entwurf oder Überarbeitung und wähle «Auftrag kopieren & ChatGPT öffnen».
+Füge ihn im Chat ein und sende ihn ab. Kopiere die Antwort dort und wähle im selben
+Arbeitsschritt «ChatGPT-Antwort einfügen». Falls der Browser den Zugriff auf die
+Zwischenablage sperrt, kannst du den Auftrag und die Antwort von Hand kopieren und einfügen.
+Die Schreibmaschine legt die Antwort im zugehörigen Feld ab. Dein Browser öffnet ChatGPT
+in einem separaten Tab. Für den Chat gelten deine dortigen Kontoeinstellungen.
+
 ## Zwei Betriebsarten
 
 **Kopiermodus:** Korpusaufbau, Suche, Kennzahlen, Speicherung, Feedbackverwaltung und Promptbau funktionieren ohne API und ohne externe Anfragen. Die Antworten erzeugst du im selbst gewählten Chat und fügst sie zurück ein.
@@ -128,7 +138,7 @@ unter «Sicherung & Betriebsart» exportieren.
 ### API-Vertrag für GitHub Pages
 
 GitHub Pages liefert die Oberfläche aus. Für direkte Rückmeldungen betreibst du einen
-separaten HTTPS-Dienst. Trage seine URL unter «Sicherung & Betriebsart» ein und sende den sichtbaren Auftrag aus dem jeweiligen Schritt. Der Kopiermodus bleibt ohne Dienst nutzbar.
+separaten HTTPS-Dienst. Wähle unter «Sicherung & Betriebsart» den eigenen HTTPS-Dienst und trage seine URL ein und sende den sichtbaren Auftrag aus dem jeweiligen Schritt. Der Kopiermodus bleibt ohne Dienst nutzbar.
 
 - Anfrage: `POST` mit `Content-Type: application/json` und Body `{"prompt":"…"}`.
 - Erfolg: HTTP 200 mit JSON `{"text":"…"}`; Fehler: passender HTTP-Status.

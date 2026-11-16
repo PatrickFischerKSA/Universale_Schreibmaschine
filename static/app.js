@@ -80,7 +80,7 @@ let activeStage='corpus',stagePrompts={};
 function isCopiedPrompt(text){return /^\s*Autorenbibliothek:/i.test(text)&&/QUELLENAUSSCHNITTE|GEPRÜFTES PROFIL/.test(text);}
 function isAnalysis(text){return /vergleichendes?\s+(Arbeits|Stil)profil|##\s*.*Syntax und Rhythmus/i.test(text)||(/Beobachtung[\s\S]*Deutung[\s\S]*Schreibregel/i.test(text)&&/Passage|Stilprofil/i.test(text));}
 function showStage(id,scroll=true){if(id==='profileSection'&&isFree())id='material';if(id!=='corpus'&&id!=='settings'&&!current){msg('Lade zuerst ein Werk oder wähle eine Autorenbibliothek.',true);id='corpus';}activeStage=id;const revising=id==='learning';document.querySelector('label[for="draft"]').textContent=revising?'Fassung B · Arbeitsfassung':'Deine Geschichte';(revising?$('revisionEditor'):$('writing')).append($('storyEditor'));$('saveDraft').textContent=revising?'Überarbeitete Fassung sichern':($('draftA').value?'Arbeitsfassung sichern → Überarbeiten':'Fassung A sichern → Überarbeiten');for(const section of stages)$(section).hidden=section!==id;for(const link of document.querySelectorAll('nav a')){if(link.hash==='#'+id)link.setAttribute('aria-current','step');else link.removeAttribute('aria-current');}if(scroll)$(id).scrollIntoView({block:'start'});updateJourney();}
-function updateJourney(){const hasWorks=!!current?.works.length,hasProfile=!!current?.profiles.length;const invalidDraft=isCopiedPrompt($('draft').value)||isAnalysis($('draft').value);$('nextProfile').disabled=!hasWorks;$('write').disabled=!hasProfile;$('review').disabled=!$('draft').value.trim()||invalidDraft;$('profileReady').textContent=hasProfile?'Gespeichertes Autorenprofil wird in deinen Schreibauftrag aufgenommen.':'Für einen KI-Schreibauftrag speichere zuerst das Autorenprofil in Schritt 2. Selbst schreiben kannst du hier jederzeit.';$('nextHint').textContent=!hasWorks?'Nächster Schritt: Werk hochladen.':!hasProfile?'Nächster Schritt: Analyseantwort in Schritt 2 einfügen, prüfen und als Profil speichern.':!$('draft').value.trim()?'Nächster Schritt: Geschichte in Schritt 3 planen und schreiben.':invalidDraft?'Im Geschichtenfeld steht offenbar eine Analyse oder ein Auftrag. Der Text bleibt erhalten; ordne ihn dem passenden Schritt zu.':activeStage==='learning'?($('reviewResponse').value.trim()?'Überarbeite deine Geschichte anhand der Rückmeldung und sichere die neue Fassung.':'Erstelle einen Überarbeitungsauftrag oder bearbeite deine Geschichte direkt unten.'):'Deine Geschichte ist vorhanden. In Schritt 4 kannst du eine Rückmeldung vorbereiten.';$('recoverProfile').hidden=!isAnalysis($('draft').value)||isCopiedPrompt($('draft').value);for(const kind of ['analyse','write','review'])$('api-'+kind).hidden=window.browserAPI?!$('gateway').value.trim():$('mode').value!=='api';}
+function updateJourney(){const hasWorks=!!current?.works.length,hasProfile=!!current?.profiles.length;const invalidDraft=isCopiedPrompt($('draft').value)||isAnalysis($('draft').value);$('nextProfile').disabled=!hasWorks;$('write').disabled=!hasProfile;$('review').disabled=!$('draft').value.trim()||invalidDraft;$('profileReady').textContent=hasProfile?'Gespeichertes Autorenprofil wird in deinen Schreibauftrag aufgenommen.':'Für einen KI-Schreibauftrag speichere zuerst das Autorenprofil in Schritt 2. Selbst schreiben kannst du hier jederzeit.';$('nextHint').textContent=!hasWorks?'Nächster Schritt: Werk hochladen.':!hasProfile?'Nächster Schritt: Analyseantwort in Schritt 2 einfügen, prüfen und als Profil speichern.':!$('draft').value.trim()?'Nächster Schritt: Geschichte in Schritt 3 planen und schreiben.':invalidDraft?'Im Geschichtenfeld steht offenbar eine Analyse oder ein Auftrag. Der Text bleibt erhalten; ordne ihn dem passenden Schritt zu.':activeStage==='learning'?($('reviewResponse').value.trim()?'Überarbeite deine Geschichte anhand der Rückmeldung und sichere die neue Fassung.':'Erstelle einen Überarbeitungsauftrag oder bearbeite deine Geschichte direkt unten.'):'Deine Geschichte ist vorhanden. In Schritt 4 kannst du eine Rückmeldung vorbereiten.';$('recoverProfile').hidden=!isAnalysis($('draft').value)||isCopiedPrompt($('draft').value);for(const kind of ['analyse','write','review'])$('api-'+kind).hidden=window.browserAPI?!gatewayMode():$('mode').value!=='api';}
 for(const link of document.querySelectorAll('nav a'))link.addEventListener('click',e=>{e.preventDefault();showStage(link.hash.slice(1));});
 $('nextProfile').onclick=()=>showStage('profileSection');
 const originalFeedback=feedback;feedback=function(){originalFeedback();if(isCopiedPrompt($('draft').value))$('draftFeedback').textContent='Hier steht ein kopierter Auftrag, noch keine Geschichte. Sende den Auftrag in ChatGPT ab und füge anschliessend die Antwort hier ein.';else if(isAnalysis($('draft').value))$('draftFeedback').textContent='Dieser Text sieht nach einer Stilanalyse aus. Sie gehört ins Autorenprofil in Schritt 2. Du kannst sie mit dem Button unten dorthin kopieren; dieser Text bleibt erhalten.';updateJourney();};
@@ -235,7 +235,7 @@ async function requestGateway(kind,prompt) {
   } finally { generationBusy = false; }
 }
 
-$('gatewaySettings').hidden = !window.browserAPI;
+$('gatewaySettings').hidden = !window.browserAPI || $('mode').value !== 'gateway';
 $('gateway').addEventListener('input',updateJourney);
 updateAB();
 
@@ -421,7 +421,8 @@ $('copyPlot').onclick = run(async () => {
 $('sendPlot').onclick = run(async () => {
   const prompt = $('plotPrompt').value;
   if (!prompt) throw Error('Erstelle zuerst einen Plotauftrag.');
-  if (window.browserAPI) return requestGateway('plot',prompt);
+  if (window.browserAPI && gatewayMode()) return requestGateway('plot',prompt);
+  if (window.browserAPI) throw Error('Wähle zuerst den HTTPS-Dienst unter Betriebsart.');
   if (generationBusy) return;
   if (!$('model').value.trim() || (!serverKeyConfigured && !$('key').value.trim())) throw Error('Richte zuerst die API unter Betriebsart ein.');
   const author = requireAuthor();
@@ -460,7 +461,7 @@ const updateWithPlot = updateJourney;
 updateJourney = function() {
   updateWithPlot();
   updateSceneControls();
-  $('sendPlot').hidden = window.browserAPI ? !$('gateway').value.trim() : !directMode();
+  $('sendPlot').hidden = window.browserAPI ? !gatewayMode() : !directMode();
 };
 $('gateway').addEventListener('input',updateJourney);
 
@@ -766,4 +767,70 @@ $('openFreeExample').onclick = run(async () => {
 $('freeComparison').addEventListener('toggle',() => {
   if ($('freeComparison').open) void showFreeComparison();
 });
+updateJourney();
+
+function gatewayMode() {
+  return $('mode').value === 'gateway' && Boolean($('gateway').value.trim());
+}
+const chatHandoffs = {
+  analyse:['prompt-analyse','profile'],
+  plot:['plotPrompt','plotAnswer'],
+  write:['prompt-write','draft'],
+  review:['prompt-review','reviewResponse']
+};
+for (const [kind,[promptId,targetId]] of Object.entries(chatHandoffs)) {
+  const promptField = $(promptId);
+  const field = $(targetId);
+  $('handoff-'+kind).addEventListener('click',event => {
+    if (!promptField.value.trim()) {
+      event.preventDefault();
+      msg('Erstelle zuerst den Auftrag.',true);
+      return;
+    }
+    function showManualCopy() {
+      const details = promptField.closest('details');
+      if (details) details.open = true;
+      promptField.focus();
+      promptField.select();
+      msg('Der Auftrag ist markiert. Kopiere ihn mit ⌘C oder Strg+C und füge ihn im geöffneten Chat ein.',true);
+    }
+    if (!navigator.clipboard?.writeText) {
+      showManualCopy();
+      return;
+    }
+    navigator.clipboard.writeText(promptField.value).then(() => {
+      msg('Auftrag kopiert. In ChatGPT einfügen und absenden. Kopiere danach die Antwort zurück.');
+    }).catch(showManualCopy);
+  });
+
+  $('paste-'+kind).onclick = run(async () => {
+    const authorId = requireAuthor();
+    let reply;
+    try { reply = await navigator.clipboard.readText(); }
+    catch {
+      field.focus();
+      msg('Die Zwischenablage ist gesperrt. Füge die Antwort mit ⌘V oder Strg+V in das markierte Arbeitsfeld ein.');
+      return;
+    }
+    if (current?.id !== authorId) throw Error('Das Projekt wurde inzwischen gewechselt.');
+    if (!reply.trim()) throw Error('Kopiere zuerst die Antwort aus ChatGPT.');
+    if (reply.trim() === promptField.value.trim() || isCopiedPrompt(reply)) throw Error('In der Zwischenablage steht noch der Auftrag. Kopiere die Antwort aus ChatGPT.');
+    if (field.value.trim() && !confirm('Den Inhalt dieses Arbeitsfelds durch die kopierte Antwort ersetzen?')) return;
+    field.value = reply;
+    field.dispatchEvent(new Event('input',{bubbles:true}));
+    await flush();
+    field.focus();
+    msg('Antwort eingefügt. Prüfe sie im Arbeitsfeld.');
+  });
+}
+const updateWithChat = updateJourney;
+updateJourney = function() {
+  updateWithChat();
+  const chatMode = $('mode').value === 'copy';
+  $('gatewaySettings').hidden = !window.browserAPI || $('mode').value !== 'gateway';
+  for (const kind of Object.keys(chatHandoffs)) {
+    $('handoff-'+kind).hidden = !chatMode;
+    $('paste-'+kind).hidden = !chatMode;
+  }
+};
 updateJourney();
