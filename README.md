@@ -12,6 +12,18 @@ Die Onlinefassung in `docs/` läuft ohne Python und ohne Server. Sie importiert 
 
 Repository herunterladen und entpacken. Auf dem Mac `Starten.command` doppelklicken und im Browser `http://127.0.0.1:18870` öffnen. Das Terminalfenster offen lassen; mit Ctrl+C beenden. Der Starter verwendet die vorhandene Python-Laufzeit von Codex. Auf einem anderen Rechner Python 3.10+ und die Pakete aus `requirements.txt` installieren, danach `python3 server.py` starten.
 
+## Freitext und Fanfiction
+
+- **Freitext**: Lege ein Projekt an. Importiere bei Bedarf TXT, Markdown, EPUB oder PDF und
+  notiere eigene Gedanken, Diskurspositionen und offene Fragen. Schreib- und A/B-Aufträge
+  verwenden dieses Material als Beleggrundlage. Das Schreiben funktioniert auch ohne Import.
+- **Fanfiction**: Wähle eine Autorenbibliothek, etwa zu Gabriele Reuter. Erstelle aus den
+  importierten Werken ein belegtes Stilprofil und beschreibe im Schreibschritt die
+  literarische Form sowie den Anschluss an ein Werk oder eine Figur. Der Auftrag verbindet
+  diese Vorgaben mit Textbelegen und dem geplanten Plot.
+
+Modus, Arbeitsstand, Quellen und Regeln werden im jeweiligen Projekt gespeichert.
+
 ## Arbeitsablauf
 
 Die Oberfläche zeigt jeweils einen Schritt. Links kannst du jederzeit wechseln.

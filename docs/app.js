@@ -1,6 +1,6 @@
 const $=id=>document.getElementById(id),token=document.querySelector('meta[name="workshop-token"]').content;
 let serverKeyConfigured=false;let library=[],current=null,selection=new Set(),promptMeta=null,timer,saveQueue=Promise.resolve();
-const workspaceFields=['task','genre','length','profile','draft','prompt','before','after','reason','rule','response','reviewResponse','draftA','storyContext','reflection','reviewFocus','abSourceIds','plotState','plotAnswer'];
+const workspaceFields=['task','genre','length','profile','draft','prompt','before','after','reason','rule','response','reviewResponse','draftA','storyContext','reflection','reviewFocus','abSourceIds','plotState','plotAnswer','writingMode','freeThoughts','freeDiscourse','fanForm','fanAnchor'];
 const msg=(text,error=false)=>{$('status').textContent=text;$('status').classList.toggle('error',error)};
 const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e};
 async function api(path,data){if(window.browserAPI)return window.browserAPI(path,data);const r=await fetch('/api/'+path,{method:data?'POST':'GET',headers:{'Content-Type':'application/json','X-Workshop-Token':token},...(data?{body:JSON.stringify(data)}:{})});const result=await r.json();if(!r.ok)throw Error(result.error||'Verarbeitung fehlgeschlagen.');return result;}
@@ -44,7 +44,7 @@ $('authorSelect').onchange=run(async()=>{await flush();const a=library.find(a=>a
 $('files').onclick=event=>{if(!current&&!$('importAuthorName').value.trim()){event.preventDefault();$('importAuthorName').focus();msg('Trage zuerst die Autorin oder den Autor des Werks ein.',true);}};
 $('files').onchange=run(async()=>{const files=Array.from($('files').files);if(!files.length)return;if(!current){const name=$('importAuthorName').value.trim();if(!name)throw Error('Autorin oder Autor fehlt.');const existing=library.find(a=>a.name.toLocaleLowerCase()===name.toLocaleLowerCase());const a=existing||await api('authors',{name});await refresh(a.id);}const id=requireAuthor();await flush();$('files').disabled=true;let ok=0;const errors=[];try{for(const f of files){try{if(f.size>250_000_000)throw Error('Diese Datei ist grösser als 250 MB. Bitte in Bände aufteilen.');msg('Korpus wird erstellt: '+f.name+' – grosse Werke können einige Minuten benötigen.');let a;if(window.browserAPI){a=await api('import',{author_id:id,filename:f.name,title:f.name.replace(/\.[^.]+$/,''),file:f,onProgress:text=>msg(f.name+' · '+text)});}else{const response=await fetch('/api/import-file?'+new URLSearchParams({author_id:id,filename:f.name}),{method:'POST',headers:{'Content-Type':'application/octet-stream','X-Workshop-Token':token},body:f});const result=await response.json();if(!response.ok)throw Error(result.error||'Import fehlgeschlagen.');a=result;}if(current?.id===id)render(a);ok++;}catch(e){errors.push(f.name+': '+e.message);}}msg(ok+' Werke importiert.'+(errors.length?' '+errors.join(' '):''),!!errors.length);}finally{$('files').disabled=false;$('files').value='';}});
 $('search').onclick=run(async()=>showPassages((await api('search',{author_id:requireAuthor(),query:$('query').value})).passages));$('browse').onclick=run(async()=>showPassages(current.works.flatMap(w=>w.passages.map(p=>({...p,title:w.title}))).slice(0,30)));
-async function prepare(kind){await flush();promptMeta=await api('prompt',{author_id:requireAuthor(),kind,selected:kind==='review'?[...abSources()]:[...selection],task:$('task').value,genre:$('genre').value,length:$('length').value,draft:$('draft').value,plot:kind==='analyse'?'':plotBrief(readPlot(),true),...(kind==='review'?{draft_a:$('draftA').value,context:$('storyContext').value,focus:$('reviewFocus').value}:{})});$('prompt').value=promptMeta.text;$('prompt').scrollTop=0;$('coverage').textContent='Materialauswahl: '+promptMeta.coverage+'. Enthaltene IDs: '+promptMeta.passage_ids.join(', ');queueSave();msg('Auftrag bereit. Du kannst ihn jetzt kopieren und in ChatGPT verwenden.');$('prompt').scrollIntoView({block:'center'});}
+async function prepare(kind){await flush();promptMeta=await api('prompt',{author_id:requireAuthor(),kind,mode:isFree()?'free':'fan',thoughts:$('freeThoughts').value,discourse:$('freeDiscourse').value,form:$('fanForm').value,anchor:$('fanAnchor').value,selected:kind==='review'?[...abSources()]:[...selection],task:$('task').value,genre:$('genre').value,length:$('length').value,draft:$('draft').value,plot:kind==='analyse'?'':plotBrief(readPlot(),true),...(kind==='review'?{draft_a:$('draftA').value,context:$('storyContext').value,focus:$('reviewFocus').value}:{})});$('prompt').value=promptMeta.text;$('prompt').scrollTop=0;$('coverage').textContent='Materialauswahl: '+promptMeta.coverage+'. Enthaltene IDs: '+promptMeta.passage_ids.join(', ');queueSave();msg('Auftrag bereit. Du kannst ihn jetzt kopieren und in ChatGPT verwenden.');$('prompt').scrollIntoView({block:'center'});}
 $('analyse').onclick=run(()=>prepare('analyse'));$('write').onclick=run(()=>prepare('write'));$('review').onclick=run(()=>prepare('review'));
 $('copy').onclick=run(async()=>{if(!$('prompt').value)throw Error('Zuerst einen Auftrag vorbereiten.');try{await navigator.clipboard.writeText($('prompt').value);msg('Prompt kopiert. In ChatGPT einfügen.');}catch{$('prompt').focus();$('prompt').select();msg('Prompt markiert. Mit ⌘+C oder Strg+C kopieren.');}});
 $('mode').onchange=()=>{$('apiSettings').hidden=$('mode').value!=='api';$('send').disabled=$('mode').value!=='api';};$('mode').onchange();
@@ -74,21 +74,21 @@ window.addEventListener('pageshow',clearContactAutofill);clearContactAutofill();
 for(const id of ['authorName','importAuthorName'])$(id).addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();if(id==='authorName')$('authorForm').requestSubmit();else $('files').click();}});
 
 // Guided workflow: each answer has exactly one destination.
-const stages=['corpus','profileSection','plot','writing','learning','settings'];
+const stages=['corpus','profileSection','material','plot','writing','learning','settings'];
 const stageNames=['Werke laden','Autorenprofil erstellen','Geschichte schreiben','Überarbeiten','Sicherung & Betriebsart'];
 let activeStage='corpus',stagePrompts={};
 function isCopiedPrompt(text){return /^\s*Autorenbibliothek:/i.test(text)&&/QUELLENAUSSCHNITTE|GEPRÜFTES PROFIL/.test(text);}
 function isAnalysis(text){return /vergleichendes?\s+(Arbeits|Stil)profil|##\s*.*Syntax und Rhythmus/i.test(text)||(/Beobachtung[\s\S]*Deutung[\s\S]*Schreibregel/i.test(text)&&/Passage|Stilprofil/i.test(text));}
-function showStage(id,scroll=true){if(id!=='corpus'&&id!=='settings'&&!current){msg('Lade zuerst ein Werk oder wähle eine Autorenbibliothek.',true);id='corpus';}activeStage=id;const revising=id==='learning';document.querySelector('label[for="draft"]').textContent=revising?'Fassung B · Arbeitsfassung':'Deine Geschichte';(revising?$('revisionEditor'):$('writing')).append($('storyEditor'));$('saveDraft').textContent=revising?'Überarbeitete Fassung sichern':($('draftA').value?'Arbeitsfassung sichern → Überarbeiten':'Fassung A sichern → Überarbeiten');for(const section of stages)$(section).hidden=section!==id;for(const link of document.querySelectorAll('nav a')){if(link.hash==='#'+id)link.setAttribute('aria-current','step');else link.removeAttribute('aria-current');}if(scroll)$(id).scrollIntoView({block:'start'});updateJourney();}
+function showStage(id,scroll=true){if(id==='profileSection'&&isFree())id='material';if(id!=='corpus'&&id!=='settings'&&!current){msg('Lade zuerst ein Werk oder wähle eine Autorenbibliothek.',true);id='corpus';}activeStage=id;const revising=id==='learning';document.querySelector('label[for="draft"]').textContent=revising?'Fassung B · Arbeitsfassung':'Deine Geschichte';(revising?$('revisionEditor'):$('writing')).append($('storyEditor'));$('saveDraft').textContent=revising?'Überarbeitete Fassung sichern':($('draftA').value?'Arbeitsfassung sichern → Überarbeiten':'Fassung A sichern → Überarbeiten');for(const section of stages)$(section).hidden=section!==id;for(const link of document.querySelectorAll('nav a')){if(link.hash==='#'+id)link.setAttribute('aria-current','step');else link.removeAttribute('aria-current');}if(scroll)$(id).scrollIntoView({block:'start'});updateJourney();}
 function updateJourney(){const hasWorks=!!current?.works.length,hasProfile=!!current?.profiles.length;const invalidDraft=isCopiedPrompt($('draft').value)||isAnalysis($('draft').value);$('nextProfile').disabled=!hasWorks;$('write').disabled=!hasProfile;$('review').disabled=!$('draft').value.trim()||invalidDraft;$('profileReady').textContent=hasProfile?'Gespeichertes Autorenprofil wird in deinen Schreibauftrag aufgenommen.':'Für einen KI-Schreibauftrag speichere zuerst das Autorenprofil in Schritt 2. Selbst schreiben kannst du hier jederzeit.';$('nextHint').textContent=!hasWorks?'Nächster Schritt: Werk hochladen.':!hasProfile?'Nächster Schritt: Analyseantwort in Schritt 2 einfügen, prüfen und als Profil speichern.':!$('draft').value.trim()?'Nächster Schritt: Geschichte in Schritt 3 planen und schreiben.':invalidDraft?'Im Geschichtenfeld steht offenbar eine Analyse oder ein Auftrag. Der Text bleibt erhalten; ordne ihn dem passenden Schritt zu.':activeStage==='learning'?($('reviewResponse').value.trim()?'Überarbeite deine Geschichte anhand der Rückmeldung und sichere die neue Fassung.':'Erstelle einen Überarbeitungsauftrag oder bearbeite deine Geschichte direkt unten.'):'Deine Geschichte ist vorhanden. In Schritt 4 kannst du eine Rückmeldung vorbereiten.';$('recoverProfile').hidden=!isAnalysis($('draft').value)||isCopiedPrompt($('draft').value);for(const kind of ['analyse','write','review'])$('api-'+kind).hidden=window.browserAPI?!$('gateway').value.trim():$('mode').value!=='api';}
 for(const link of document.querySelectorAll('nav a'))link.addEventListener('click',e=>{e.preventDefault();showStage(link.hash.slice(1));});
 $('nextProfile').onclick=()=>showStage('profileSection');
 const originalFeedback=feedback;feedback=function(){originalFeedback();if(isCopiedPrompt($('draft').value))$('draftFeedback').textContent='Hier steht ein kopierter Auftrag, noch keine Geschichte. Sende den Auftrag in ChatGPT ab und füge anschliessend die Antwort hier ein.';else if(isAnalysis($('draft').value))$('draftFeedback').textContent='Dieser Text sieht nach einer Stilanalyse aus. Sie gehört ins Autorenprofil in Schritt 2. Du kannst sie mit dem Button unten dorthin kopieren; dieser Text bleibt erhalten.';updateJourney();};
-const originalRender=render;render=function(a,fill=false){originalRender(a,fill);if(fill){renderPlot();$('abPassages').replaceChildren();$('abQuery').value='';stagePrompts={};for(const kind of ['analyse','write','review']){$('exchange-'+kind).hidden=true;$('prompt-'+kind).value='';$('note-'+kind).textContent='';}showStage(!a.works.length?'corpus':a.profiles.length?(a.workspace.draft?'writing':'plot'):'profileSection',false);}else showStage(activeStage,false);};
+const originalRender=render;render=function(a,fill=false){originalRender(a,fill);if(fill){renderPlot();$('abPassages').replaceChildren();$('abQuery').value='';stagePrompts={};for(const kind of ['analyse','write','review']){$('exchange-'+kind).hidden=true;$('prompt-'+kind).value='';$('note-'+kind).textContent='';}showStage(isFree()?'material':!a.works.length?'corpus':a.profiles.length?(a.workspace.draft?'writing':'plot'):'profileSection',false);}else showStage(activeStage,false);};
 // Generated prompts are recreated explicitly in their own step; legacy text remains in backups.
 rebuildSavedPrompt=async()=>{};
 const originalAuthorChange=$('authorSelect').onchange;$('authorSelect').onchange=async e=>{await originalAuthorChange(e);if(!current)showStage('corpus',false);};
-prepare=async function(kind){requireAuthor();if(kind==='write'&&!current.profiles.length)throw Error('Speichere zuerst das Autorenprofil in Schritt 2.');if(kind==='review'&&(isCopiedPrompt($('draft').value)||isAnalysis($('draft').value)))throw Error('Für die Überarbeitung fehlt eine Geschichte. Im Geschichtenfeld steht eine Analyse oder ein Auftrag.');await flush();const authorId=current.id;const r=await api('prompt',{author_id:authorId,kind,selected:kind==='review'?[...abSources()]:[...selection],task:$('task').value,genre:$('genre').value,length:$('length').value,draft:$('draft').value,plot:kind==='analyse'?'':plotBrief(readPlot(),true),...(kind==='review'?{draft_a:$('draftA').value,context:$('storyContext').value,focus:$('reviewFocus').value}:{})});if(current?.id!==authorId)return;stagePrompts[kind]=r;promptMeta=r;$('prompt').value=r.text;$('prompt-'+kind).value=r.text;$('prompt-'+kind).scrollTop=0;$('exchange-'+kind).hidden=false;$('note-'+kind).textContent='Auftrag bereit. Kopiere ihn jetzt nach ChatGPT. Die Antwort gehört in das Feld direkt darunter.';queueSave();$('exchange-'+kind).scrollIntoView({block:'start'});msg('Auftrag erstellt. Jetzt kopieren und in ChatGPT absenden.');};
+prepare=async function(kind){requireAuthor();if(kind==='write'&&!isFree()&&!current.profiles.length)throw Error('Speichere zuerst das Autorenprofil in Schritt 2.');if(kind==='review'&&(isCopiedPrompt($('draft').value)||isAnalysis($('draft').value)))throw Error('Für die Überarbeitung fehlt eine Geschichte. Im Geschichtenfeld steht eine Analyse oder ein Auftrag.');await flush();const authorId=current.id;const r=await api('prompt',{author_id:authorId,kind,mode:isFree()?'free':'fan',thoughts:$('freeThoughts').value,discourse:$('freeDiscourse').value,form:$('fanForm').value,anchor:$('fanAnchor').value,selected:kind==='review'?[...abSources()]:[...selection],task:$('task').value,genre:$('genre').value,length:$('length').value,draft:$('draft').value,plot:kind==='analyse'?'':plotBrief(readPlot(),true),...(kind==='review'?{draft_a:$('draftA').value,context:$('storyContext').value,focus:$('reviewFocus').value}:{})});if(current?.id!==authorId)return;stagePrompts[kind]=r;promptMeta=r;$('prompt').value=r.text;$('prompt-'+kind).value=r.text;$('prompt-'+kind).scrollTop=0;$('exchange-'+kind).hidden=false;$('note-'+kind).textContent='Auftrag bereit. Kopiere ihn jetzt nach ChatGPT. Die Antwort gehört in das Feld direkt darunter.';queueSave();$('exchange-'+kind).scrollIntoView({block:'start'});msg('Auftrag erstellt. Jetzt kopieren und in ChatGPT absenden.');};
 for(const kind of ['analyse','write','review']){
  $('copy-'+kind).onclick=run(async()=>{const field=$('prompt-'+kind);if(!field.value)throw Error('Erstelle zuerst den Auftrag in diesem Schritt.');try{await navigator.clipboard.writeText(field.value);$('note-'+kind).textContent='Kopiert. In ChatGPT einfügen und absenden. Kopiere danach nur die Antwort zurück.';}catch{field.closest('details').open=true;field.focus();field.select();$('note-'+kind).textContent='Auftrag markiert: mit ⌘C oder Strg+C kopieren, dann in ChatGPT einfügen.';}});
  $('api-'+kind).onclick=run(async()=>{const prompt=$('prompt-'+kind).value;if(!prompt)throw Error('Zuerst den Auftrag erstellen.');if(window.browserAPI)return requestGateway(kind,prompt);if(!$('model').value.trim()){showStage('settings');$('model').focus();throw Error('Trage deine Modell-ID unter Betriebsart ein.');}const target={analyse:'profile',write:'draft',review:'reviewResponse'}[kind];if($(target).value&&!confirm('Den vorhandenen Text in diesem Arbeitsfeld durch die KI-Antwort ersetzen? Gespeicherte Versionen bleiben erhalten.'))return;const id=current.id;$('note-'+kind).textContent='KI erstellt die Antwort …';const result=await api('generate',{prompt,model:$('model').value.trim(),key:$('key').value});if(current?.id!==id)return;$(target).value=result.text;feedback();queueSave();$('note-'+kind).textContent='Antwort eingefügt. Lies und prüfe sie, bevor du sie speicherst.';});
@@ -539,4 +539,58 @@ $('readDraft').onclick = run(() => {
   $('readDraft').textContent = 'Vorlesen stoppen';
   speech.speak(utterance);
 });
+updateJourney();
+
+function isFree() {
+  return Boolean(current && $('writingMode').value === 'free');
+}
+function updateModes() {
+  const free = isFree();
+  document.querySelector('nav a[href="#material"]').hidden = !free;
+  document.querySelector('nav a[href="#profileSection"]').hidden = free;
+  $('fanFormPanel').hidden = free;
+  document.querySelector('label[for="authorSelect"]').textContent = 'Freitextprojekte und Autorenbibliotheken';
+  document.querySelector('label[for="files"]').textContent = free ? 'Material hochladen · PDF, EPUB oder Text' : 'Werke hochladen · PDF, EPUB oder Text';
+  $('writing').querySelector('h2').textContent = free ? '4. Deinen Text schreiben' : '4. Deine Geschichte schreiben';
+  document.querySelector('label[for="task"]').textContent = free ? 'Was willst du entwickeln oder untersuchen?' : 'Welche Geschichte soll entstehen?';
+  document.querySelector('label[for="draft"]').textContent = activeStage === 'learning' ? 'Fassung B · Arbeitsfassung' : free ? 'Dein Text' : 'Deine Geschichte';
+  $('abSources').querySelector('summary').textContent = free ? 'Materialbelege und Feedbackregeln' : 'Autorenprofil, Textbelege und Feedbackregeln';
+  if (free) $('abMaterial').textContent = 'Auszüge stammen aus dem Material dieses Projekts. Aktive Feedbackregeln werden übernommen.';
+  $('nextProfile').disabled = !free && !current?.works.length;
+  $('nextProfile').textContent = free ? 'Weiter zu Gedanken und Diskurs' : 'Weiter zum Autorenprofil';
+  $('startFree').setAttribute('aria-pressed',String(free));
+  $('startFan').setAttribute('aria-pressed',String(Boolean(current && !free)));
+  $('modeHelp').textContent = free ? 'Freitextprojekt geöffnet. Importiere Material oder gehe direkt zu deinen Gedanken.' :
+    'Für Fanfiction wählst du eine Autorenbibliothek oder importierst ein Werk unter dem Namen der Autorin oder des Autors.';
+  if (free) {
+    $('write').disabled = false;
+    $('profileReady').textContent = 'Der Schreibauftrag verwendet deine Gedanken, Diskurspositionen und passenden Materialauszüge.';
+    $('nextHint').textContent = 'Entwickle deine Frage und wähle Material aus. Bei einer erzählerischen Form kannst du den Plot dazunehmen.';
+  }
+}
+const updateWithModes = updateJourney;
+updateJourney = function() { updateWithModes(); updateModes(); };
+$('startFree').onclick = () => {
+  $('freeStart').hidden = false;
+  $('freeName').focus();
+};
+$('startFan').onclick = () => {
+  $('freeStart').hidden = true;
+  $('modeHelp').textContent = 'Wähle für Fanfiction eine Autorenbibliothek oder lade unten ein Werk hoch, etwa von Gabriele Reuter.';
+  const importName = $('importAuthorName');
+  if ($('importAuthor').hidden) $('authorSelect').focus();
+  else importName.focus();
+};
+$('createFree').onclick = run(async () => {
+  const name = $('freeName').value.trim();
+  if (!name) throw Error('Gib deinem Freitextprojekt einen Namen.');
+  await flush();
+  const project = await api('authors',{name});
+  await api('workspace',{author_id:project.id,workspace:{writingMode:'free',genre:'Essay'}});
+  $('freeName').value = '';
+  $('freeStart').hidden = true;
+  await refresh(project.id);
+  showStage('corpus');
+});
+$('materialToWrite').onclick = () => showStage('writing');
 updateJourney();
