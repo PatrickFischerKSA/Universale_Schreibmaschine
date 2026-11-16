@@ -678,7 +678,7 @@ function renderReuterView(manuscript) {
     changes.append(card);
   }
   changes.append(node('p',snapshot.reflection));
-  body.replaceChildren(exampleDraftGrid(snapshot),changes);
+  body.replaceChildren(...(view === 'reuter-scene-2' ? [reuterCheckDemo(snapshot)] : []),exampleDraftGrid(snapshot),changes);
 }
 $('reuterView').addEventListener('change',run(async () => {
   if (reuterComparisonRequest) renderReuterView(await reuterComparisonRequest);
@@ -876,6 +876,10 @@ function buildChatPrompt(kind, base) {
   const selection = panel.snippet.checked ?
     draft.value.slice(draft.selectionStart,draft.selectionEnd).trim().slice(0,5000) : '';
   const focus = chatFocus[kind][Number(panel.focus.value)-1]?.[1];
+  return composeChatPrompt(kind,base,focus,selection,panel.snippet.checked ? draft.value : '');
+}
+
+function composeChatPrompt(kind,base,focus,selection,fallback='') {
   const guidance = [
     'SCHREIBMASCHINE · ANTWORTRAHMEN',
     'Beginne mit einer eigenen Zeile: Schreibschritt: '+languageForStep(kind),
@@ -883,8 +887,8 @@ function buildChatPrompt(kind, base) {
     kind === 'review' ? 'Gib ausschliesslich Rückmeldung. Schreibe weder Fassung A noch Fassung B neu.' : '',
     focus ? 'GEZIELTER ZUSATZAUFTRAG DER SCHREIBMASCHINE\n'+focus : '',
     selection ? 'MARKIERTE TEXTSTELLE ALS ARBEITSMATERIAL\n'+selection : '',
-    panel.snippet.checked && !selection && draft.value.trim() ?
-      'TEXT ZUM ZUSATZAUFTRAG ALS ARBEITSMATERIAL\n'+draft.value.trim().slice(0,5000) : ''
+    !selection && fallback.trim() ?
+      'TEXT ZUM ZUSATZAUFTRAG ALS ARBEITSMATERIAL\n'+fallback.trim().slice(0,5000) : ''
   ].filter(Boolean).join('\n\n');
   return base+'\n\n'+guidance;
 }
@@ -907,8 +911,7 @@ function checkReply(kind) {
   if (panel.input.value.trim() && (!request || request.project!==project?.id || !request.text)) {
     findings.unshift({level:'warning',message:'Zu dieser Antwort ist kein aktueller Auftrag hinterlegt. Die Übereinstimmung mit dem gesendeten Material ist offen.'});
   }
-  panel.checks.replaceChildren(...findings.map(item=>node('li',
-    ({ok:'✓ ',warning:'Hinweis: ',block:'Übernahme gesperrt: '})[item.level]+item.message)));
+  panel.checks.replaceChildren(...renderReplyFindings(findings));
   panel.apply.disabled = findings.some(item=>item.level==='block');
   return findings;
 }
@@ -1000,3 +1003,72 @@ $('preparePlot').onclick = async event => {
   promptsForCheck.plot = {project:current.id,text:field.value,ids:[]};
 };
 updateJourney();
+
+function renderReplyFindings(findings) {
+  const labels = {ok:'✓ ',warning:'Hinweis: ',block:'Übernahme gesperrt: '};
+  return findings.map(item => node('li',labels[item.level]+item.message));
+}
+
+$('openReuterDemo').onclick = run(async () => {
+  $('reuterView').value = 'reuter-scene-2';
+  await showReuterComparison();
+  if (!reuterComparisonRequest) return;
+  renderReuterView(await reuterComparisonRequest);
+  $('reuterCheckDemo')?.scrollIntoView({block:'start'});
+});
+
+function reuterCheckDemo(snapshot) {
+  const box = node('section',undefined,'exchange');
+  box.id = 'reuterCheckDemo';
+  const trigger = node('button','Zusatzauftrag erzeugen und Beispielantwort prüfen');
+  trigger.type = 'button';
+  const output = node('div');
+  output.setAttribute('aria-live','polite');
+  box.append(node('h3','Prüfdemo · Dialog und Subtext'),
+    node('p','Die Schreibmaschine erstellt einen Rückmeldungsauftrag zu Lenes Frage. Danach prüft sie eine vorbereitete fehlerhafte Antwort.'),
+    trigger,output);
+
+  trigger.onclick = run(async () => {
+    const authorId = requireAuthor();
+    const sourceIds = ['reuter-001','reuter-056','reuter-061'];
+    const selected = snapshot.draft.split('\n\n').find(paragraph => paragraph.includes('Soll ich den Herrn wegschicken')) || '';
+    if (!selected) throw Error('Die vorbereitete Textstelle fehlt im Beispiel.');
+    const result = await api('prompt',{
+      author_id:authorId,kind:'review',mode:'fan',selected:sourceIds,
+      task:'Kommentiere Lenes Frage in der Garderobenszene.',
+      draft_a:snapshot.draftA,draft:snapshot.draft,
+      focus:'Dialog und Subtext',form:'Figurennahe Szene im psychologischen Gesellschaftsroman'
+    });
+    if (current?.id !== authorId) return;
+    const [focusLabel,focus] = chatFocus.review[0];
+    const prompt = composeChatPrompt('review',result.text,focus,selected);
+    const example = [
+      'Schreibschritt: Überarbeitung',
+      'Vorschlag: Lenes Frage zeigt, dass sie bereits über Agathes Kopf hinweg entschieden hat. Das steht in [reuter-999].',
+      'Als Beleg: [reuter-061] «Lene strich das blaue Tuch glatt.»',
+      'Vollständige Neufassung:',
+      'Agathe trat ein. «Ich werde nie wieder tanzen», sagte sie. Lene schloss die Tür. Agathe nahm ihren Mantel und ging nach Hause.'
+    ].join('\n\n');
+    const passages = current.works.flatMap(work => work.passages);
+    const findings = workshopReplyCheck({
+      kind:'review',text:example,request:prompt,knownIds:passages.map(p=>p.id),
+      sentIds:result.passage_ids,passages,hasA:Boolean(snapshot.draftA)
+    });
+    const promptDetails = node('details');
+    const promptField = document.createElement('textarea');
+    promptField.readOnly = true;
+    promptField.rows = 9;
+    promptField.value = prompt;
+    promptField.setAttribute('aria-label','Vollständiger erzeugter Auftrag');
+    promptDetails.append(node('summary','Vollständigen erzeugten Auftrag lesen'),promptField);
+    const findingsList = node('ul');
+    findingsList.append(...renderReplyFindings(findings));
+    output.replaceChildren(
+      node('h4','Zusatzauftrag · '+focusLabel),node('p',focus),node('blockquote',selected),
+      promptDetails,node('h4','Vorbereitete Beispielantwort'),node('pre',example,'passage'),
+      node('h4','Ergebnis der lokalen Prüfung'),findingsList,
+      node('p','Die Demo sendet keine Anfrage an ChatGPT und übernimmt keine Antwort in den Arbeitsstand.')
+    );
+  });
+  return box;
+}
