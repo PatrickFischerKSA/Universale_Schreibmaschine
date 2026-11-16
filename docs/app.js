@@ -257,20 +257,28 @@ const beats = [
 ];
 const premiseFields = [
   ['idea','Prämisse'],['goal','Ziel der Hauptfigur'],['force','Gegenkraft'],
-  ['stakes','Was steht auf dem Spiel?'],['world','Welt, Zeit und verbindliche Fakten']
+  ['stakes','Was steht auf dem Spiel?'],['world','Schauplätze, Epoche und Atmosphäre'],
+  ['lore','Weltregeln und verbindliche Fakten'],['timeline','Zeitleiste, Wege und Dauer'],
+  ['openThreads','Motive, Vorausdeutungen und offene Fäden']
 ];
 const figureFields = [
   ['name','Name'],['role','Rolle'],['want','Eigenes Ziel'],['wound','Prägende Erfahrung'],
-  ['belief','Überzeugung oder Selbsttäuschung'],['relation','Beziehung und Konflikt'],['voice','Stimme und Eigenheiten']
+  ['belief','Überzeugung oder Selbsttäuschung'],['need','Was die Figur lernen oder zulassen muss'],
+  ['relation','Beziehung und Konflikt'],['arc','Veränderung und entscheidende Wahl'],
+  ['voice','Wortwahl, Sprachrhythmus und Eigenheiten']
 ];
 const sceneFields = [
   ['title','Kapitel und Szenentitel'],['beat','Plotstation'],['pov','Perspektive, Ort und Zeit'],
   ['goal','Szenenziel'],['obstacle','Hindernis'],['choice','Entscheidung oder Wendung'],
-  ['effect','Folge und Anschluss'],['continuity','Fakten, Requisiten oder offene Fäden']
+  ['effect','Folge und Anschluss'],['steps','Szenenschritte vom Einstieg bis zur Wendung'],
+  ['tension','Innerer, zwischenmenschlicher oder äusserer Konflikt'],
+  ['texture','Sinneseindrücke, Gesten und Subtext'],
+  ['continuity','Fakten, Requisiten, Figurenwissen oder offene Fäden'],
+  ['recap','Nach dem Entwurf: Was ist tatsächlich passiert?']
 ];
 const bookFields = [
   ['visual','Bildsprache und visuelle Figurenmerkmale'],['image','Schlüsselszene für eine Illustration'],
-  ['audience','Zielpublikum und Genre'],['cover','Coveridee und Bildtitel'],['pitch','Klappentext oder Buchbeschreibung']
+  ['consistency','Wiedererkennbare Kleidung, Requisiten und Schauplätze']
 ];
 function readPlot() {
   try { return JSON.parse($('plotState').value) || {}; }
@@ -281,6 +289,7 @@ function writePlot(plot) {
   $('plotPrompt').value = '';
   $('plotChecks').replaceChildren();
   queueSave();
+  updateSceneControls();
 }
 function plotFields(base, specs, place, onInput) {
   for (const [key,title] of specs) {
@@ -377,6 +386,9 @@ $('preparePlot').onclick = run(() => {
   const brief = plotBrief(plot);
   if (!brief) throw Error('Halte zuerst eine Prämisse oder eine Szene fest.');
   const action = $('plotAction').value;
+  const field = $('draft');
+  const passage = field.value.slice(field.selectionStart,field.selectionEnd).trim();
+  const workingText = (passage || field.value).trim();
   if ($('plotAction').selectedIndex === 2 && !plot.scenes?.some(scene => scene.id === plot.active)) {
     throw Error('Wähle zuerst eine Szene für den Entwurf.');
   }
@@ -388,10 +400,15 @@ $('preparePlot').onclick = run(() => {
       'Prüfe Ziele, prägende Erfahrungen, Überzeugungen, Stimme und Beziehungen. Zeige, welche Figurenentscheidung welchen Wendepunkt auslösen könnte.',
       'Arbeite nur die ausgewählte Szene aus. Verwende Weltfakten und die anschliessende Szenenfolge als Grenzen.',
       'Prüfe die Übergänge der Szenenfolge, Zeit und Ort, Figurenwissen, etablierte Weltfakten, Foreshadowing und Klischees. Nenne die betroffene Szene und eine Alternative.',
-      'Erstelle ein konsistentes Bildbriefing für die gewählte Schlüsselszene und einen Vorschlag für Cover und Klappentext anhand des Zielpublikums.'
+      'Prüfe innere, zwischenmenschliche und äussere Reibung. Zeige, wo der Druck nachlässt. Schlage eine überraschende Komplikation vor, die aus dem bisherigen Geschehen folgt.',
+      'Untersuche, was jede Figur will, sagt und verschweigt. Markiere erklärende Rede und Beispiele, an denen sich Stimmen unterscheiden lassen.',
+      'Markiere abstrakte oder klischeehafte Stellen und schlage konkrete Wahrnehmungen, Handlungen, Geräusche oder Materialdetails aus Sicht der Figur vor.',
+      'Gleiche Zeiten, Wege, Dauer, Weltregeln, Requisiten und das Wissen der Figuren ab. Kennzeichne Annahmen und Fakten, die verifiziert werden müssen.',
+      'Entwirf ein Bildbriefing für die Schlüsselszene. Halte Figurenmerkmale, Licht, Haltung, Raum und emotionale Situation über mehrere Bilder hinweg konsistent.'
     ][$('plotAction').selectedIndex],
     'Begründe Vorschläge mit Ziel, Widerstand, Entscheidung und Folge. Markiere neue Ideen und ungelöste Widersprüche. Für eine Kapitelausarbeitung entwickle zuerst Szenenschritte und danach einen Entwurf aus der gewählten Perspektive.',
-    'PLANUNGSNOTIZEN\n'+brief
+    'PLANUNGSNOTIZEN\n'+brief,
+    workingText ? (passage?'MARKIERTE TEXTSTELLE':'AKTUELLER ENTWURF')+' ALS ARBEITSMATERIAL\n'+workingText.slice(0,48000) : ''
   ].join('\n\n');
   msg('Plotauftrag erstellt.');
 });
@@ -442,7 +459,84 @@ $('plotToDraft').onclick = run(async () => { await flush(); showStage('writing')
 const updateWithPlot = updateJourney;
 updateJourney = function() {
   updateWithPlot();
+  updateSceneControls();
   $('sendPlot').hidden = window.browserAPI ? !$('gateway').value.trim() : !directMode();
 };
 $('gateway').addEventListener('input',updateJourney);
+
+function selectedScene(plot) {
+  return plot.scenes?.find(scene => scene.id === plot.active);
+}
+function updateSceneControls() {
+  const scene = selectedScene(readPlot());
+  $('activeScene').textContent = scene ? 'Gewählte Szene: '+(scene.title || 'Ohne Titel') : '';
+  $('saveSceneText').hidden = !scene;
+  $('newSceneText').hidden = !scene;
+  $('loadSceneText').hidden = !scene?.manuscript;
+}
+const sceneTextFields = ['draftA','draft','reviewResponse','reflection'];
+$('newSceneText').onclick = run(async () => {
+  if (!selectedScene(readPlot())) throw Error('Wähle zuerst eine Szene.');
+  if (sceneTextFields.some(id => $(id).value.trim()) && !confirm('Das Schreibfeld für diese Szene leeren? Gesicherte Szenenstände bleiben erhalten.')) return;
+  for (const id of sceneTextFields) $(id).value = '';
+  for (const kind of ['write','review']) {
+    delete stagePrompts[kind];
+    $('prompt-'+kind).value = '';
+    $('exchange-'+kind).hidden = true;
+  }
+  feedback();
+  await flush();
+  $('draft').focus();
+});
+$('saveSceneText').onclick = run(async () => {
+  const plot = readPlot();
+  const scene = selectedScene(plot);
+  if (!scene) throw Error('Wähle zuerst eine Szene in der Plotmaschine.');
+  if (!$('draft').value.trim() || isCopiedPrompt($('draft').value) || isAnalysis($('draft').value)) {
+    throw Error('Im Schreibfeld fehlt ein gültiger Szenentext.');
+  }
+  if (scene.manuscript && !confirm('Den gespeicherten A/B-Arbeitsstand dieser Szene aktualisieren?')) return;
+  scene.manuscript = Object.fromEntries(sceneTextFields.map(id => [id,$(id).value]));
+  writePlot(plot);
+  await flush();
+  msg('A/B-Stand bei der Szene gesichert.');
+});
+$('loadSceneText').onclick = run(async () => {
+  const scene = selectedScene(readPlot());
+  if (!scene?.manuscript) throw Error('Für diese Szene ist noch kein A/B-Stand gesichert.');
+  if (sceneTextFields.some(id => $(id).value.trim()) && !confirm('Das Schreibfeld mit dem gesicherten Szenenstand füllen? Sichere bei Bedarf zuerst deinen aktuellen Text.')) return;
+  for (const id of sceneTextFields) $(id).value = scene.manuscript[id] || '';
+  for (const kind of ['write','review']) {
+    delete stagePrompts[kind];
+    $('prompt-'+kind).value = '';
+    $('exchange-'+kind).hidden = true;
+  }
+  feedback();
+  await flush();
+  msg('Szenenstand ins Schreibfeld geladen.');
+});
+$('exportManuscript').onclick = run(() => {
+  const scenes = (readPlot().scenes || []).filter(scene => scene.manuscript?.draft?.trim());
+  if (!scenes.length) throw Error('Sichere zuerst mindestens einen Szenentext am Schreibfeld.');
+  const manuscript = scenes.map((scene,i) => '## '+(scene.title || 'Szene '+(i+1))+'\n\n'+scene.manuscript.draft.trim()).join('\n\n');
+  download('manuskript.md','# Manuskript\n\n'+manuscript+'\n','text/markdown;charset=utf-8');
+});
+const speech = window.speechSynthesis;
+$('readDraft').hidden = !speech;
+$('readDraft').onclick = run(() => {
+  if (speech.speaking || speech.pending) {
+    speech.cancel();
+    $('readDraft').textContent = 'Text vorlesen';
+    return;
+  }
+  const field = $('draft');
+  const selected = field.value.slice(field.selectionStart,field.selectionEnd);
+  const text = (selected || field.value).trim();
+  if (!text) throw Error('Im Schreibfeld fehlt Text zum Vorlesen.');
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'de-CH';
+  utterance.onend = utterance.onerror = () => { $('readDraft').textContent = 'Text vorlesen'; };
+  $('readDraft').textContent = 'Vorlesen stoppen';
+  speech.speak(utterance);
+});
 updateJourney();

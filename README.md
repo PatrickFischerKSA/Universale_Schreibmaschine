@@ -82,8 +82,11 @@ den Entwurf. Schreib- und Rückmeldungsaufträge berücksichtigen den Plotstand 
 Szene neben Stilprofil, Regeln und Textbelegen. «Plot prüfen» zeigt offene Stationen und
 fehlende Teile der Szenenkette. Für Varianten, Kapitelentwürfe und Kontinuitätsfeedback
 kannst du spezifische Aufträge kopieren oder an den eingerichteten API-Dienst senden.
-Illustrationen, Cover und Buchpräsentation lassen sich planen und als Teil des Plotprotokolls
-exportieren.
+Die Projektbibel hält Weltregeln, Zeitleiste und offene Fäden fest. Für Textarbeit gibt es
+Aufträge zu Konflikt, Dialog, Subtext, Sinneseindrücken, Klischees und Kontinuität. Eine im
+Schreibfeld markierte Textstelle kann gezielt besprochen oder vorgelesen werden. Sichere
+den A/B-Stand je Szene und exportiere die gesicherten Arbeitsfassungen in Szenenreihenfolge
+als Manuskript. Für die kreative Bildplanung stehen Schlüsselszene und visuelle Kontinuität bereit.
 
 ## Fassung A und Fassung B
 
