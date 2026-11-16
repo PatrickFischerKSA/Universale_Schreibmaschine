@@ -750,7 +750,7 @@ async function showFreeComparison() {
       link.rel = 'noopener';
       references.append(link,node('p',source.location+' · '+source.summary));
     }
-    body.replaceChildren(exampleDraftGrid(snapshot),comments,references);
+    body.replaceChildren(freeCheckDemo(snapshot,sources),exampleDraftGrid(snapshot),comments,references);
     body.dataset.loaded = 'true';
   } catch (error) { body.textContent = error.message; }
 }
@@ -1018,37 +1018,64 @@ $('openReuterDemo').onclick = run(async () => {
 });
 
 function reuterCheckDemo(snapshot) {
-  const box = node('section',undefined,'exchange');
-  box.id = 'reuterCheckDemo';
-  const trigger = node('button','Zusatzauftrag erzeugen und Beispielantwort prüfen');
-  trigger.type = 'button';
-  const output = node('div');
-  output.setAttribute('aria-live','polite');
-  box.append(node('h3','Prüfdemo · Dialog und Subtext'),
-    node('p','Die Schreibmaschine erstellt einen Rückmeldungsauftrag zu Lenes Frage. Danach prüft sie eine vorbereitete fehlerhafte Antwort.'),
-    trigger,output);
-
-  trigger.onclick = run(async () => {
-    const authorId = requireAuthor();
-    const sourceIds = ['reuter-001','reuter-056','reuter-061'];
-    const selected = snapshot.draft.split('\n\n').find(paragraph => paragraph.includes('Soll ich den Herrn wegschicken')) || '';
-    if (!selected) throw Error('Die vorbereitete Textstelle fehlt im Beispiel.');
-    const result = await api('prompt',{
-      author_id:authorId,kind:'review',mode:'fan',selected:sourceIds,
-      task:'Kommentiere Lenes Frage in der Garderobenszene.',
-      draft_a:snapshot.draftA,draft:snapshot.draft,
-      focus:'Dialog und Subtext',form:'Figurennahe Szene im psychologischen Gesellschaftsroman'
-    });
-    if (current?.id !== authorId) return;
-    const [focusLabel,focus] = chatFocus.review[0];
-    const prompt = composeChatPrompt('review',result.text,focus,selected);
-    const example = [
-      'Schreibschritt: Überarbeitung',
+  return buildCheckDemo(snapshot,{
+    id:'reuterCheckDemo',mode:'fan',focusIndex:0,
+    point:'Soll ich den Herrn wegschicken',
+    description:'Die Schreibmaschine erstellt einen Rückmeldungsauftrag zu Lenes Frage.',
+    sourceIds:['reuter-001','reuter-056','reuter-061'],
+    task:'Kommentiere Lenes Frage in der Garderobenszene.',
+    form:'Figurennahe Szene im psychologischen Gesellschaftsroman',
+    example:[
       'Vorschlag: Lenes Frage zeigt, dass sie bereits über Agathes Kopf hinweg entschieden hat. Das steht in [reuter-999].',
       'Als Beleg: [reuter-061] «Lene strich das blaue Tuch glatt.»',
       'Vollständige Neufassung:',
       'Agathe trat ein. «Ich werde nie wieder tanzen», sagte sie. Lene schloss die Tür. Agathe nahm ihren Mantel und ging nach Hause.'
-    ].join('\n\n');
+    ]
+  });
+}
+
+function freeCheckDemo(snapshot,sources) {
+  return buildCheckDemo(snapshot,{
+    id:'freeCheckDemo',mode:'free',focusIndex:1,
+    point:'Wie sich frühe KI-Hilfe im Vergleich ausgewirkt hätte',
+    description:'Die Schreibmaschine fragt, was der Uetiker Erfahrungsbericht über frühe KI-Hilfe belegt.',
+    sourceIds:sources.map(source => source.id),
+    task:'Prüfe im markierten Absatz, welche Aussage der Uetiker Erfahrungsbericht trägt. Trenne Beobachtung, Vergleich und eigene Schlussfolgerung.',
+    example:[
+      'Vorschlag: Streich die Einschränkung. [Q99] ist eine Vergleichsstudie und beweist, dass frühe KI-Hilfe immer schadet.',
+      'Als wörtlicher Beleg: [Q2] «Frühe KI-Hilfe verschlechterte jeden Aufsatz.»',
+      'Vollständige Neufassung:',
+      'KI soll erst nach dem ersten Entwurf eingesetzt werden. Das hat Uetikon bewiesen. Wer früher nachfragt, übernimmt fremde Gedanken. Deshalb sollte jede Schule frühe KI-Hilfe verbieten.'
+    ]
+  });
+}
+
+function buildCheckDemo(snapshot,config) {
+  const [focusLabel,focus] = chatFocus.review[config.focusIndex];
+  const box = node('section',undefined,'exchange');
+  box.id = config.id;
+  const trigger = node('button','Zusatzauftrag erzeugen und Beispielantwort prüfen');
+  trigger.type = 'button';
+  const output = node('div');
+  output.setAttribute('aria-live','polite');
+  box.append(node('h3','Prüfdemo · '+focusLabel),
+    node('p',config.description+' Danach prüft sie eine vorbereitete fehlerhafte Antwort.'),
+    trigger,output);
+
+  trigger.onclick = run(async () => {
+    const authorId = requireAuthor();
+    const selected = snapshot.draft.split('\n\n').find(paragraph => paragraph.includes(config.point)) || '';
+    if (!selected) throw Error('Die vorbereitete Textstelle fehlt im Beispiel.');
+    const result = await api('prompt',{
+      author_id:authorId,kind:'review',mode:config.mode,selected:config.sourceIds,
+      task:config.task,draft_a:snapshot.draftA,draft:snapshot.draft,
+      focus:focusLabel,form:config.form || '',
+      thoughts:config.mode === 'free' ? current.workspace.freeThoughts : '',
+      discourse:config.mode === 'free' ? current.workspace.freeDiscourse : ''
+    });
+    if (current?.id !== authorId) return;
+    const prompt = composeChatPrompt('review',result.text,focus,selected);
+    const example = ['Schreibschritt: Überarbeitung',...config.example].join('\n\n');
     const passages = current.works.flatMap(work => work.passages);
     const findings = workshopReplyCheck({
       kind:'review',text:example,request:prompt,knownIds:passages.map(p=>p.id),
